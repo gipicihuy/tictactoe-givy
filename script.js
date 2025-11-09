@@ -1,18 +1,21 @@
 // --- 1. KONFIGURASI FIREBASE ANDA (WAJIB DIGANTI!) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY", 
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_DATABASE_URL.firebaseio.com", 
-    projectId: "YOUR_PROJECT_ID",
+    apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw", // Ganti
+    authDomain: "tictactoe-givy.firebaseapp.com",     // Ganti
+    projectId: "tictactoe-givy",                     // Ganti
+    // PASTE databaseURL LENGKAP DI SINI:
+    databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app", 
 };
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-// ------------------------------------------------------------------
+const auth = firebase.auth(); // Inisialisasi Auth
 
+// --- VARIABEL GLOBAL ---
 let currentRoomId = null;
 let currentPlayerName = null;
 let currentPlayerRole = null; // 'X' atau 'O'
+let currentUserId = null; // UID untuk keamanan
 
 // Cache DOM elements
 const $ = (id) => document.getElementById(id);
@@ -20,55 +23,23 @@ const cells = document.querySelectorAll('.cell');
 
 // Fungsi Utility
 const generateRoomId = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+const winningConditions = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Baris
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolom
+    [0, 4, 8], [2, 4, 6]            // Diagonal
+];
 
-// --- A. FUNGSI PEMBUATAN ROOM (Pemain X) ---
-$('create-room-btn').addEventListener('click', () => {
-    const selectedMode = $('game-mode').value;
-    
-    if (selectedMode === 'multiplayer') {
-        currentPlayerRole = 'X';
-        $('player-role-display').textContent = 'X (Pembuat Room)';
-        $('lobby-view').style.display = 'none';
-        $('name-modal').style.display = 'flex';
-    } else {
-        alert(`Mode ${selectedMode} (vs AI) belum diimplementasikan. Pilih Multiplayer.`);
-    }
-});
+// --- A. FUNGSI UTAMA (CREATE, JOIN, LISTEN) ---
 
-// --- B. FUNGSI GABUNG ROOM (Pemain O atau Manual Join) ---
-$('join-manual-btn').addEventListener('click', () => {
-    const id = $('manual-room-id').value.trim();
-    if (id) {
-        window.location.search = `?id=${id}`;
-    } else {
-        alert('Masukkan Room ID yang valid.');
-    }
-});
-
-
-// --- C. PENANGANAN SUBMIT NAMA ---
-$('name-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPlayerName = $('player-name-input').value.trim();
-    $('name-modal').style.display = 'none';
-
-    if (currentPlayerRole === 'X') {
-        createAndHostRoom(currentPlayerName);
-    } else if (currentPlayerRole === 'O') {
-        joinExistingRoom(currentRoomId, currentPlayerName);
-    }
-});
-
-
-// --- D. LOGIKA UTAMA (CREATE, JOIN, LISTEN) ---
-
-function createAndHostRoom(name) {
+function createAndHostRoom(name, userId) { 
     currentRoomId = generateRoomId();
     const roomRef = database.ref('rooms/' + currentRoomId);
     
     const initialRoomData = {
         playerX: name,
+        playerX_uid: userId, 
         playerO: null,
+        playerO_uid: null, 
         mode: 'multiplayer',
         status: 'waiting',
         board: Array(9).fill(''),
@@ -87,7 +58,7 @@ function createAndHostRoom(name) {
 }
 
 
-function joinExistingRoom(id, name) {
+function joinExistingRoom(id, name, userId) {
     const roomRef = database.ref('rooms/' + id);
 
     roomRef.once('value', (snapshot) => {
@@ -100,7 +71,6 @@ function joinExistingRoom(id, name) {
         }
 
         if (roomData.playerO) {
-            // Deteksi Room Full
             alert("Room sudah penuh dan game sedang berlangsung!");
             window.location.search = '';
             return;
@@ -109,6 +79,7 @@ function joinExistingRoom(id, name) {
         // Slot tersedia: Gabung sebagai Pemain O
         roomRef.update({
             playerO: name,
+            playerO_uid: userId, 
             status: 'active'
         }).then(() => {
             displayGameView();
@@ -122,7 +93,6 @@ function listenToRoomChanges(roomRef) {
     roomRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
-            // Room sudah dihapus atau kadaluwarsa
             alert('Room ini sudah tidak tersedia (Game Over atau kadaluwarsa). Kembali ke lobby.');
             window.location.search = '';
             return;
@@ -149,8 +119,7 @@ function listenToRoomChanges(roomRef) {
     });
 }
 
-
-// --- E. LOGIKA GERAKAN (MOVE) ---
+// --- B. LOGIKA GERAKAN (MOVE) ---
 
 cells.forEach((cell) => {
     cell.addEventListener('click', (e) => {
@@ -160,11 +129,15 @@ cells.forEach((cell) => {
         roomRef.once('value', (snapshot) => {
             const data = snapshot.val();
 
-            // Verifikasi
+            // Verifikasi Dasar (Meski sudah dilindungi Security Rules)
             if (!data || data.currentTurn !== currentPlayerRole) return alert("Bukan giliran Anda atau game belum siap!");
             if (data.board[index] !== '') return alert("Kotak sudah terisi!");
             if (data.status !== 'active' || data.winner) return;
             
+            // Verifikasi Keamanan (Cek UID)
+            const expectedUid = currentPlayerRole === 'X' ? data.playerX_uid : data.playerO_uid;
+            if (currentUserId !== expectedUid) return alert("Kesalahan Otentikasi: Anda tidak memiliki izin untuk bergerak.");
+
             // Lakukan Gerakan
             let newBoard = [...data.board];
             newBoard[index] = currentPlayerRole;
@@ -185,25 +158,46 @@ cells.forEach((cell) => {
 });
 
 
-// --- F. LOGIKA KEMENANGAN (Kunci Game Tic-Tac-Toe) ---
-
-const winningConditions = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6]
-];
+// --- C. LOGIKA KEMENANGAN ---
 
 function checkWinner(board) {
     for (let i = 0; i < winningConditions.length; i++) {
         const [a, b, c] = winningConditions[i];
         if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return board[a]; // Mengembalikan 'X' atau 'O'
+            return board[a]; 
         }
     }
     return null;
 }
 
-// --- G. INIT SAAT HALAMAN DIMUAT & UTILITY UI ---
+// --- D. PENANGANAN NAMA & OTENTIKASI ---
+
+$('name-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentPlayerName = $('player-name-input').value.trim();
+    $('name-modal').style.display = 'none';
+
+    // Langkah Kunci: Otentikasi Anonim untuk mendapatkan UID
+    auth.signInAnonymously()
+        .then((userCredential) => {
+            currentUserId = userCredential.user.uid; 
+
+            if (currentPlayerRole === 'X') {
+                createAndHostRoom(currentPlayerName, currentUserId);
+            } else if (currentPlayerRole === 'O') {
+                joinExistingRoom(currentRoomId, currentPlayerName, currentUserId);
+            }
+        })
+        .catch((error) => {
+            console.error("Gagal otentikasi:", error);
+            alert("Gagal memulai permainan. Cek koneksi Anda.");
+            window.location.search = ''; 
+        });
+});
+
+
+// --- E. INIT SAAT HALAMAN DIMUAT & UTILITY UI ---
+
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
@@ -216,6 +210,31 @@ window.onload = () => {
         $('name-modal').style.display = 'flex';
     }
 };
+
+// Gabung Room secara manual
+$('join-manual-btn').addEventListener('click', () => {
+    const id = $('manual-room-id').value.trim();
+    if (id) {
+        window.location.search = `?id=${id}`;
+    } else {
+        alert('Masukkan Room ID yang valid.');
+    }
+});
+
+// Buat Room
+$('create-room-btn').addEventListener('click', () => {
+    const selectedMode = $('game-mode').value;
+    
+    if (selectedMode === 'multiplayer') {
+        currentPlayerRole = 'X';
+        $('player-role-display').textContent = 'X (Pembuat Room)';
+        $('lobby-view').style.display = 'none';
+        $('name-modal').style.display = 'flex';
+    } else {
+        alert(`Mode ${selectedMode} (vs AI) belum diimplementasikan. Pilih Multiplayer.`);
+    }
+});
+
 
 function displayGameView() {
     $('lobby-view').style.display = 'none';
