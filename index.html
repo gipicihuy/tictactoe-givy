@@ -3,11 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe Givy Multiplayer</title>
-    <link rel="stylesheet" href="style.css"> 
+    <title>Tic-Tac-Toe Givy Multiplayer (Final)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 { color: #333; }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .modal form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .tic-tac-toe-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell {
+            background-color: white;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover:empty {
+            background-color: #e0f7fa;
+        }
+
+        /* Styling X dan O */
+        .X { color: #d32f2f; }
+        .O { color: #1976d2; }
+
+        /* Non-aktifkan klik saat game over */
+        .game-over .cell {
+            cursor: default;
+        }
+    </style>
 </head>
 <body>
 
@@ -56,6 +124,260 @@
         <button id="copy-link-btn" style="margin-top: 10px;">🔗 Salin Link Room</button>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // --- 1. KONFIGURASI FIREBASE ANDA (Sudah dilengkapi databaseURL) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
+            authDomain: "tictactoe-givy.firebaseapp.com",
+            projectId: "tictactoe-givy",
+            storageBucket: "tictactoe-givy.firebasestorage.app",
+            messagingSenderId: "814206394475",
+            appId: "1:814206394475:web:e4a4e4ab9077b23ec7112e",
+            measurementId: "G-S7DM9SZXTJ",
+            databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app", 
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth(); 
+
+        // --- VARIABEL GLOBAL ---
+        let currentRoomId = null;
+        let currentPlayerName = null;
+        let currentPlayerRole = null; 
+        let currentUserId = null; 
+
+        // Fungsi Utility
+        const $ = (id) => document.getElementById(id);
+        const generateRoomId = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+            [0, 4, 8], [2, 4, 6]            
+        ];
+
+        // --- 2. LOGIKA UTAMA (Fungsi-Fungsi Asinkron) ---
+
+        function checkWinner(board) {
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a]; 
+                }
+            }
+            return null;
+        }
+
+        function createAndHostRoom(name, userId) { 
+            currentRoomId = generateRoomId();
+            const roomRef = database.ref('rooms/' + currentRoomId);
+            
+            const initialRoomData = {
+                playerX: name,
+                playerX_uid: userId, 
+                playerO: null,
+                playerO_uid: null, 
+                mode: 'multiplayer',
+                status: 'waiting',
+                board: Array(9).fill(''),
+                currentTurn: 'X',
+                winner: null,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            roomRef.set(initialRoomData)
+                .then(() => {
+                    displayGameView();
+                    history.pushState(null, '', `?id=${currentRoomId}`); 
+                    listenToRoomChanges(roomRef);
+                })
+                .catch(error => alert("Gagal membuat room: " + error.message));
+        }
+
+
+        function joinExistingRoom(id, name, userId) {
+            const roomRef = database.ref('rooms/' + id);
+
+            roomRef.once('value', (snapshot) => {
+                const roomData = snapshot.val();
+
+                if (!roomData) {
+                    alert("Room tidak ditemukan atau sudah kadaluwarsa.");
+                    window.location.search = '';
+                    return;
+                }
+
+                if (roomData.playerO) {
+                    alert("Room sudah penuh dan game sedang berlangsung!");
+                    window.location.search = '';
+                    return;
+                }
+                
+                roomRef.update({
+                    playerO: name,
+                    playerO_uid: userId, 
+                    status: 'active'
+                }).then(() => {
+                    displayGameView();
+                    listenToRoomChanges(roomRef);
+                });
+            });
+        }
+
+
+        function listenToRoomChanges(roomRef) {
+            roomRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    alert('Room ini sudah tidak tersedia (Game Over atau kadaluwarsa). Kembali ke lobby.');
+                    window.location.search = '';
+                    return;
+                }
+
+                $('room-info').textContent = `Room: ${currentRoomId} | X: ${data.playerX} | O: ${data.playerO || 'Menunggu...'}`;
+                
+                if (data.status === 'finished') {
+                    const result = data.winner === 'Draw' ? 'Hasil Seri (Draw)!' : `🎉 Pemenang: ${data.winner} (${data.winner === currentPlayerRole ? 'Anda Menang!' : 'Anda Kalah!'})!`;
+                    $('status-display').textContent = result;
+                    $('board').classList.add('game-over');
+                } else if (data.status === 'waiting') {
+                    $('status-display').textContent = 'Menunggu Lawan... Bagikan Link Ini!';
+                    $('board').classList.remove('game-over');
+                } else if (data.status === 'active') {
+                    const turnName = data.currentTurn === currentPlayerRole ? 'ANDA' : (data.currentTurn === 'X' ? data.playerX : data.playerO);
+                    $('status-display').textContent = `Giliran: ${turnName} (${data.currentTurn})`;
+                    $('board').classList.remove('game-over');
+                }
+                
+                drawBoard(data);
+            });
+        }
+
+        function handleCellClick(e) {
+            const index = parseInt(e.target.dataset.cellIndex);
+            const roomRef = database.ref('rooms/' + currentRoomId);
+            
+            roomRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+
+                if (!data || data.currentTurn !== currentPlayerRole) return; 
+                if (data.board[index] !== '') return; 
+                if (data.status !== 'active' || data.winner) return;
+                
+                const expectedUid = currentPlayerRole === 'X' ? data.playerX_uid : data.playerO_uid;
+                if (currentUserId !== expectedUid) return; 
+
+                let newBoard = [...data.board];
+                newBoard[index] = currentPlayerRole;
+                
+                const nextTurn = currentPlayerRole === 'X' ? 'O' : 'X';
+                const winner = checkWinner(newBoard);
+                const isDraw = !winner && newBoard.every(cell => cell !== '');
+
+                roomRef.update({
+                    board: newBoard,
+                    currentTurn: winner || isDraw ? null : nextTurn,
+                    winner: winner || (isDraw ? 'Draw' : null),
+                    status: winner || isDraw ? 'finished' : 'active'
+                });
+            });
+        }
+
+        // --- 3. LOGIKA UTILITY DAN INIT DOM ---
+
+        function displayGameView() {
+            $('lobby-view').style.display = 'none';
+            $('name-modal').style.display = 'none';
+            $('game-view').style.display = 'block';
+        }
+
+        function drawBoard(data) {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                cell.textContent = data.board[index];
+                cell.className = 'cell ' + data.board[index];
+            });
+        }
+
+        // Fungsi utama untuk inisialisasi semua event listener
+        function initializeEventListeners() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell) => {
+                cell.addEventListener('click', handleCellClick);
+            });
+
+            $('copy-link-btn').addEventListener('click', () => {
+                const link = window.location.href;
+                navigator.clipboard.writeText(link).then(() => {
+                    alert("Link berhasil disalin!");
+                });
+            });
+
+            // Buat Room
+            $('create-room-btn').addEventListener('click', () => {
+                const selectedMode = $('game-mode').value;
+                if (selectedMode === 'multiplayer') {
+                    currentPlayerRole = 'X';
+                    $('player-role-display').textContent = 'X (Pembuat Room)';
+                    $('lobby-view').style.display = 'none';
+                    $('name-modal').style.display = 'flex';
+                } else {
+                    alert(`Mode ${selectedMode} (vs AI) belum diimplementasikan. Pilih Multiplayer.`);
+                }
+            });
+
+            // Gabung Room secara manual
+            $('join-manual-btn').addEventListener('click', () => {
+                const id = $('manual-room-id').value.trim();
+                if (id) {
+                    window.location.search = `?id=${id}`;
+                } else {
+                    alert('Masukkan Room ID yang valid.');
+                }
+            });
+
+            // Penanganan Nama & Otentikasi
+            $('name-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                currentPlayerName = $('player-name-input').value.trim();
+                $('name-modal').style.display = 'none';
+
+                auth.signInAnonymously()
+                    .then((userCredential) => {
+                        currentUserId = userCredential.user.uid; 
+                        if (currentPlayerRole === 'X') {
+                            createAndHostRoom(currentPlayerName, currentUserId);
+                        } else if (currentPlayerRole === 'O') {
+                            joinExistingRoom(currentRoomId, currentPlayerName, currentUserId);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Gagal otentikasi:", error);
+                        alert("Gagal memulai permainan. Cek koneksi Firebase dan Anonim Auth.");
+                        window.location.search = ''; 
+                    });
+            });
+        }
+
+
+        // --- 4. INIT SCRIPT (Setelah DOM Siap) ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            initializeEventListeners();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            if (id) {
+                currentRoomId = id;
+                currentPlayerRole = 'O'; 
+                $('player-role-display').textContent = 'O (Gabung Room)';
+                $('lobby-view').style.display = 'none';
+                $('name-modal').style.display = 'flex';
+            }
+        });
+    </script>
 </body>
 </html>
