@@ -1,35 +1,46 @@
 // --- 1. KONFIGURASI FIREBASE ANDA (WAJIB DIGANTI!) ---
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw", // Ganti
-    authDomain: "tictactoe-givy.firebaseapp.com",     // Ganti
-    projectId: "tictactoe-givy",                     // Ganti
-    // PASTE databaseURL LENGKAP DI SINI:
-    databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app", 
+  apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
+  authDomain: "tictactoe-givy.firebaseapp.com",
+  projectId: "tictactoe-givy",
+  storageBucket: "tictactoe-givy.firebasestorage.app",
+  messagingSenderId: "814206394475",
+  appId: "1:814206394475:web:e4a4e4ab9077b23ec7112e",
+  measurementId: "G-S7DM9SZXTJ"
 };
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-const auth = firebase.auth(); // Inisialisasi Auth
+const auth = firebase.auth(); 
 
 // --- VARIABEL GLOBAL ---
 let currentRoomId = null;
 let currentPlayerName = null;
 let currentPlayerRole = null; // 'X' atau 'O'
-let currentUserId = null; // UID untuk keamanan
+let currentUserId = null; // UID dari Anonymous Auth
 
-// Cache DOM elements
+// Fungsi Utility DOM
 const $ = (id) => document.getElementById(id);
-const cells = document.querySelectorAll('.cell');
-
-// Fungsi Utility
 const generateRoomId = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+
 const winningConditions = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // Baris
     [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolom
     [0, 4, 8], [2, 4, 6]            // Diagonal
 ];
 
-// --- A. FUNGSI UTAMA (CREATE, JOIN, LISTEN) ---
+// --- 2. LOGIKA UTAMA (Fungsi-Fungsi Asinkron) ---
+
+function checkWinner(board) {
+    for (let i = 0; i < winningConditions.length; i++) {
+        const [a, b, c] = winningConditions[i];
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return board[a]; 
+        }
+    }
+    return null;
+}
 
 function createAndHostRoom(name, userId) { 
     currentRoomId = generateRoomId();
@@ -76,7 +87,6 @@ function joinExistingRoom(id, name, userId) {
             return;
         }
         
-        // Slot tersedia: Gabung sebagai Pemain O
         roomRef.update({
             playerO: name,
             playerO_uid: userId, 
@@ -119,86 +129,125 @@ function listenToRoomChanges(roomRef) {
     });
 }
 
-// --- B. LOGIKA GERAKAN (MOVE) ---
+function handleCellClick(e) {
+    const index = parseInt(e.target.dataset.cellIndex);
+    const roomRef = database.ref('rooms/' + currentRoomId);
+    
+    roomRef.once('value', (snapshot) => {
+        const data = snapshot.val();
 
-cells.forEach((cell) => {
-    cell.addEventListener('click', (e) => {
-        const index = parseInt(e.target.dataset.cellIndex);
-        const roomRef = database.ref('rooms/' + currentRoomId);
+        // Verifikasi dasar di client
+        if (!data || data.currentTurn !== currentPlayerRole) return; // 'Bukan giliran Anda'
+        if (data.board[index] !== '') return; // 'Kotak sudah terisi'
+        if (data.status !== 'active' || data.winner) return;
         
-        roomRef.once('value', (snapshot) => {
-            const data = snapshot.val();
+        // Verifikasi Keamanan (Cek UID)
+        const expectedUid = currentPlayerRole === 'X' ? data.playerX_uid : data.playerO_uid;
+        if (currentUserId !== expectedUid) return; // 'Kesalahan Otentikasi'
 
-            // Verifikasi Dasar (Meski sudah dilindungi Security Rules)
-            if (!data || data.currentTurn !== currentPlayerRole) return alert("Bukan giliran Anda atau game belum siap!");
-            if (data.board[index] !== '') return alert("Kotak sudah terisi!");
-            if (data.status !== 'active' || data.winner) return;
-            
-            // Verifikasi Keamanan (Cek UID)
-            const expectedUid = currentPlayerRole === 'X' ? data.playerX_uid : data.playerO_uid;
-            if (currentUserId !== expectedUid) return alert("Kesalahan Otentikasi: Anda tidak memiliki izin untuk bergerak.");
+        // Lakukan Gerakan
+        let newBoard = [...data.board];
+        newBoard[index] = currentPlayerRole;
+        
+        const nextTurn = currentPlayerRole === 'X' ? 'O' : 'X';
+        const winner = checkWinner(newBoard);
+        const isDraw = !winner && newBoard.every(cell => cell !== '');
 
-            // Lakukan Gerakan
-            let newBoard = [...data.board];
-            newBoard[index] = currentPlayerRole;
-            
-            const nextTurn = currentPlayerRole === 'X' ? 'O' : 'X';
-            const winner = checkWinner(newBoard);
-            const isDraw = !winner && newBoard.every(cell => cell !== '');
-
-            // Update Database
-            roomRef.update({
-                board: newBoard,
-                currentTurn: winner || isDraw ? null : nextTurn,
-                winner: winner || (isDraw ? 'Draw' : null),
-                status: winner || isDraw ? 'finished' : 'active'
-            });
+        // Update Database
+        roomRef.update({
+            board: newBoard,
+            currentTurn: winner || isDraw ? null : nextTurn,
+            winner: winner || (isDraw ? 'Draw' : null),
+            status: winner || isDraw ? 'finished' : 'active'
         });
     });
-});
-
-
-// --- C. LOGIKA KEMENANGAN ---
-
-function checkWinner(board) {
-    for (let i = 0; i < winningConditions.length; i++) {
-        const [a, b, c] = winningConditions[i];
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return board[a]; 
-        }
-    }
-    return null;
 }
 
-// --- D. PENANGANAN NAMA & OTENTIKASI ---
+// --- 3. LOGIKA UTILITY DAN INIT DOM (Dijalankan Setelah DOM Siap) ---
 
-$('name-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPlayerName = $('player-name-input').value.trim();
+function displayGameView() {
+    $('lobby-view').style.display = 'none';
     $('name-modal').style.display = 'none';
+    $('game-view').style.display = 'block';
+}
 
-    // Langkah Kunci: Otentikasi Anonim untuk mendapatkan UID
-    auth.signInAnonymously()
-        .then((userCredential) => {
-            currentUserId = userCredential.user.uid; 
+function drawBoard(data) {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        cell.textContent = data.board[index];
+        cell.className = 'cell ' + data.board[index];
+    });
+}
 
-            if (currentPlayerRole === 'X') {
-                createAndHostRoom(currentPlayerName, currentUserId);
-            } else if (currentPlayerRole === 'O') {
-                joinExistingRoom(currentRoomId, currentPlayerName, currentUserId);
-            }
-        })
-        .catch((error) => {
-            console.error("Gagal otentikasi:", error);
-            alert("Gagal memulai permainan. Cek koneksi Anda.");
-            window.location.search = ''; 
+// Fungsi utama untuk inisialisasi semua event listener
+function initializeEventListeners() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell) => {
+        cell.addEventListener('click', handleCellClick);
+    });
+
+    $('copy-link-btn').addEventListener('click', () => {
+        const link = window.location.href;
+        navigator.clipboard.writeText(link).then(() => {
+            alert("Link berhasil disalin!");
         });
-});
+    });
+
+    // Buat Room
+    $('create-room-btn').addEventListener('click', () => {
+        const selectedMode = $('game-mode').value;
+        if (selectedMode === 'multiplayer') {
+            currentPlayerRole = 'X';
+            $('player-role-display').textContent = 'X (Pembuat Room)';
+            $('lobby-view').style.display = 'none';
+            $('name-modal').style.display = 'flex';
+        } else {
+            alert(`Mode ${selectedMode} (vs AI) belum diimplementasikan. Pilih Multiplayer.`);
+        }
+    });
+
+    // Gabung Room secara manual
+    $('join-manual-btn').addEventListener('click', () => {
+        const id = $('manual-room-id').value.trim();
+        if (id) {
+            window.location.search = `?id=${id}`;
+        } else {
+            alert('Masukkan Room ID yang valid.');
+        }
+    });
+
+    // Penanganan Nama & Otentikasi
+    $('name-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentPlayerName = $('player-name-input').value.trim();
+        $('name-modal').style.display = 'none';
+
+        auth.signInAnonymously()
+            .then((userCredential) => {
+                currentUserId = userCredential.user.uid; 
+                if (currentPlayerRole === 'X') {
+                    createAndHostRoom(currentPlayerName, currentUserId);
+                } else if (currentPlayerRole === 'O') {
+                    joinExistingRoom(currentRoomId, currentPlayerName, currentUserId);
+                }
+            })
+            .catch((error) => {
+                console.error("Gagal otentikasi:", error);
+                alert("Gagal memulai permainan. Cek koneksi Anda.");
+                window.location.search = ''; 
+            });
+    });
+}
 
 
-// --- E. INIT SAAT HALAMAN DIMUAT & UTILITY UI ---
+// --- 4. INIT SCRIPT (Setelah DOM Siap) ---
 
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Inisialisasi semua event listener (di luar if/else agar tombol selalu berfungsi)
+    initializeEventListeners();
+
+    // Cek apakah pemain datang dari link share (untuk JOIN)
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
 
@@ -209,49 +258,4 @@ window.onload = () => {
         $('lobby-view').style.display = 'none';
         $('name-modal').style.display = 'flex';
     }
-};
-
-// Gabung Room secara manual
-$('join-manual-btn').addEventListener('click', () => {
-    const id = $('manual-room-id').value.trim();
-    if (id) {
-        window.location.search = `?id=${id}`;
-    } else {
-        alert('Masukkan Room ID yang valid.');
-    }
-});
-
-// Buat Room
-$('create-room-btn').addEventListener('click', () => {
-    const selectedMode = $('game-mode').value;
-    
-    if (selectedMode === 'multiplayer') {
-        currentPlayerRole = 'X';
-        $('player-role-display').textContent = 'X (Pembuat Room)';
-        $('lobby-view').style.display = 'none';
-        $('name-modal').style.display = 'flex';
-    } else {
-        alert(`Mode ${selectedMode} (vs AI) belum diimplementasikan. Pilih Multiplayer.`);
-    }
-});
-
-
-function displayGameView() {
-    $('lobby-view').style.display = 'none';
-    $('name-modal').style.display = 'none';
-    $('game-view').style.display = 'block';
-}
-
-function drawBoard(data) {
-    cells.forEach((cell, index) => {
-        cell.textContent = data.board[index];
-        cell.className = 'cell ' + data.board[index];
-    });
-}
-
-$('copy-link-btn').addEventListener('click', () => {
-    const link = window.location.href;
-    navigator.clipboard.writeText(link).then(() => {
-        alert("Link berhasil disalin!");
-    });
 });
