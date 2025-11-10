@@ -1,45 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Givy TicTacToe - Multiplayer Realtime Game</title>
+    <title>Givy TicTacToe - Game Multiplayer Realtime</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Givy TicTacToe ✖️⭕</h1>
-        <p id="room-id-display" class="hidden"></p>
+    <h1><i class="fas fa-gamepad"></i> Givy TicTacToe</h1>
+    <p id="room-id-display" class="hidden"></p>
 
-        <div id="setup-screen" class="screen">
-            <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="15" required>
-            <div class="button-group">
-                <button id="create-room-btn">➕ Create Room</button>
-                <button id="join-room-auto-btn">🔗 Join Room</button>
+    <div id="setup-screen" class="screen">
+        <input type="text" id="nickname-input" placeholder="Masukkan Nama Panggilan" maxlength="15" required>
+        <div class="button-group">
+            <button id="create-room-btn"><i class="fas fa-plus-circle"></i> Buat Ruangan</button>
+            <button id="join-room-auto-btn"><i class="fas fa-sign-in-alt"></i> Gabung Ruangan</button>
+        </div>
+        <p id="nickname-save-status"></p>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <h2 id="status-message"></h2>
+        
+        <div id="share-link-container" class="hidden">
+            <p><i class="fas fa-share-alt"></i> Bagikan tautan ini ke temanmu:</p>
+            <div class="share-box">
+                <input type="text" id="share-link-input" readonly>
+                <button id="copy-link-btn"><i class="fas fa-copy"></i> Salin</button>
             </div>
-            <p id="nickname-save-status"></p>
         </div>
 
-        <div id="game-screen" class="screen hidden">
-            <h2 id="status-message"></h2>
-            
-            <div id="share-link-container" class="hidden">
-                <p>Share this link with your friend:</p>
-                <div class="share-box">
-                    <input type="text" id="share-link-input" readonly>
-                    <button id="copy-link-btn">📋 Copy</button>
-                </div>
-            </div>
-
-            <div id="tictactoe-board" class="board hidden">
-                </div>
-            
-            <button id="play-again-btn" class="hidden">🔄 Play Again</button>
-        </div>
-
+        <div id="tictactoe-board" class="board hidden"></div>
+        
+        <button id="play-again-btn" class="hidden"><i class="fas fa-redo"></i> Main Lagi</button>
     </div>
 
     <script src="script.js"></script>
