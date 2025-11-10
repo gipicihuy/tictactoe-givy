@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
   authDomain: "tictactoe-givy.firebaseapp.com",
   // 💥 KOREKSI UTAMA ADA DI SINI: Hapus '-default-rtdb'
-  databaseURL: "https://tictactoe-givy.asia-southeast1.firebasedatabase.app", 
+  databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app/", 
   projectId: "tictactoe-givy",
   storageBucket: "tictactoe-givy.firebasestorage.app",
   messagingSenderId: "814206394475",
