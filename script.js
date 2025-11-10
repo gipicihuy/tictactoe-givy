@@ -45,9 +45,10 @@ const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const roomIDDisplay = document.getElementById('room-id-display');
 const scoreDisplay = document.getElementById('score-display'); 
+const leaveRoomBtn = document.getElementById('leave-room-btn'); 
 
 // =======================================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (Anti-XSS)
 // =======================================================
 
 /**
@@ -79,7 +80,6 @@ function getRoomIDFromURL() {
  * Menyimpan nama panggilan ke local storage.
  */
 function saveNickname() {
-    // >> Sanitasi input sebelum digunakan atau disimpan
     const rawInput = nicknameInput.value.trim();
     const sanitizedNickname = sanitizeInput(rawInput);
     
@@ -90,7 +90,7 @@ function saveNickname() {
     
     localStorage.setItem('givy-tictactoe-nickname', sanitizedNickname);
     nickname = sanitizedNickname;
-    nicknameInput.value = sanitizedNickname; // Update UI dengan nama yang sudah bersih
+    nicknameInput.value = sanitizedNickname; 
     document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
     setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 2000);
     return true;
@@ -102,7 +102,6 @@ function saveNickname() {
 function loadNickname() {
     const savedName = localStorage.getItem('givy-tictactoe-nickname');
     if (savedName) {
-        // >> Sanitasi juga data yang dimuat
         const sanitizedName = sanitizeInput(savedName);
         nicknameInput.value = sanitizedName;
         nickname = sanitizedName;
@@ -170,7 +169,6 @@ function createRoom() {
 
     const initialRoomState = {
         board: Array(9).fill(""),
-        // Menggunakan nickname yang sudah di-sanitasi
         players: { p1: nickname }, 
         turn: 'p1',
         winner: null,
@@ -218,7 +216,6 @@ function joinRoom(id) {
             return;
         }
 
-        // Amankan nilai nickname dari Firebase
         const p1NicknameSafe = sanitizeInput(room.players.p1);
         const p2NicknameSafe = room.players.p2 ? sanitizeInput(room.players.p2) : null;
 
@@ -233,7 +230,6 @@ function joinRoom(id) {
         } else if (!room.players.p2) {
             playerID = 'p2';
             roomRef.update({
-                // Menggunakan nickname yang sudah di-sanitasi
                 'players/p2': nickname, 
                 status: 'playing'
             }).then(() => {
@@ -307,13 +303,13 @@ function handleRoomUpdate(snapshot) {
         console.warn('Data ruangan null. Lawan mungkin telah menghapus ruangan.');
         statusMessage.textContent = 'Lawan keluar, ruangan dihapus. Mengalihkan...';
         roomRef.off();
-        setTimeout(() => window.location.href = window.location.origin + window.location.pathname, 3000);
+        // Redirect ke setup screen setelah 3 detik
+        setTimeout(() => window.location.href = window.location.origin + window.location.pathname, 3000); 
         return;
     }
 
     const { board, players, turn, winner, status, score } = room;
     
-    // >> Sanitasi SEMUA nickname dari Firebase saat digunakan di UI
     const p1Nickname = players.p1 ? sanitizeInput(players.p1) : 'P1 (X)';
     const p2Nickname = players.p2 ? sanitizeInput(players.p2) : 'P2 (O)';
     const opponentNickname = playerID === 'p1' ? p2Nickname : p1Nickname;
@@ -451,11 +447,66 @@ function handlePlayAgain() {
 }
 
 // =======================================================
+// LOGIKA KELUAR RUANGAN (Keluar Bersih)
+// =======================================================
+
+/**
+ * Menangani proses keluar dari ruangan.
+ */
+function handleLeaveRoom() {
+    if (!roomRef || !playerID) {
+        window.location.href = window.location.origin + window.location.pathname;
+        return;
+    }
+
+    if (!confirm("Apakah Anda yakin ingin keluar dari ruangan? Jika Anda P1, ruangan akan dihapus.")) {
+        return;
+    }
+
+    roomRef.off(); 
+    console.log(`Membersihkan status ${playerID} saat keluar secara manual...`);
+
+    const playerSlotRef = roomRef.child('players').child(playerID);
+    playerSlotRef.onDisconnect().cancel(); 
+
+    if (playerID === 'p1') {
+        roomRef.remove().then(() => {
+            console.log('Ruangan berhasil dihapus.');
+            resetClientState();
+        }).catch(error => {
+            console.error('Gagal menghapus ruangan:', error);
+            resetClientState();
+        });
+    } else if (playerID === 'p2') {
+        roomRef.update({
+            'players/p2': null,
+            status: 'waiting'
+        }).then(() => {
+            console.log('Slot P2 berhasil dikosongkan.');
+            resetClientState();
+        }).catch(error => {
+             console.error('Gagal mengosongkan slot P2:', error);
+             resetClientState();
+        });
+    }
+}
+
+/**
+ * Mereset status klien dan mengarahkan ke setup screen.
+ */
+function resetClientState() {
+    roomID = null;
+    playerID = null;
+    roomRef = null;
+    
+    window.location.href = window.location.origin + window.location.pathname;
+}
+
+// =======================================================
 // EVENT LISTENERS & INITIAL SETUP
 // =======================================================
 
 createRoomBtn.addEventListener('click', createRoom);
-
 joinRoomAutoBtn.addEventListener('click', () => {
     const roomFromURL = getRoomIDFromURL();
     
@@ -468,6 +519,7 @@ joinRoomAutoBtn.addEventListener('click', () => {
 });
 
 playAgainBtn.addEventListener('click', handlePlayAgain);
+leaveRoomBtn.addEventListener('click', handleLeaveRoom);
 
 copyLinkBtn.addEventListener('click', () => {
     shareLinkInput.select();
@@ -483,8 +535,8 @@ window.addEventListener('beforeunload', () => {
         console.log(`Membersihkan ${playerID} saat disconnect...`);
 
         const playerSlotRef = roomRef.child('players').child(playerID);
-        playerSlotRef.onDisconnect().remove();
-
+        playerSlotRef.onDisconnect().remove(); 
+        
         if (playerID === 'p1') {
             roomRef.remove();
         } else if (playerID === 'p2') {
