@@ -297,14 +297,27 @@ function handleRoomUpdate(snapshot) {
     playAgainBtn.classList.add('hidden');
     shareLinkContainer.classList.add('hidden');
     
-    // PERBARUI TAMPILAN SKOR
+    // PERBARUI TAMPILAN SKOR (MENGGUNAKAN HTML UNTUK GAYA VISUAL BARU)
     const p1Nickname = players.p1 || 'P1 (X)';
     const p2Nickname = players.p2 || 'P2 (O)';
+    const scoreP1 = score ? (score.p1 || 0) : 0;
+    const scoreP2 = score ? (score.p2 || 0) : 0;
 
     if (score) {
-        scoreDisplay.textContent = `${p1Nickname} (X): ${score.p1 || 0} | ${p2Nickname} (O): ${score.p2 || 0}`;
+        scoreDisplay.innerHTML = `
+            <span class="player-score p1-score">
+                <span class="player-name">${p1Nickname} (X)</span>: 
+                <span class="score-value">${scoreP1}</span>
+            </span>
+            <span class="score-separator">|</span>
+            <span class="player-score p2-score">
+                <span class="player-name">${p2Nickname} (O)</span>: 
+                <span class="score-value">${scoreP2}</span>
+            </span>
+        `;
     } else {
-        scoreDisplay.textContent = `${p1Nickname} (X): 0 | ${p2Nickname} (O): 0`;
+        // Tampilan default jika skor belum terinisialisasi
+        scoreDisplay.innerHTML = `${p1Nickname} (X): 0 | ${p2Nickname} (O): 0`;
     }
 
     // Update Status Message
@@ -374,7 +387,7 @@ function handleCellClick(event) {
             winner = playerID;
             updates.status = 'finished';
             updates.winner = winner;
-            // TAMBAHKAN UPDATE SKOR
+            // UPDATE SKOR menggunakan ServerValue.increment() secara atomik
             updates[`score/${playerID}`] = firebase.database.ServerValue.increment(1);
         } else if (!board.includes("")) {
             newStatus = 'finished';
@@ -397,8 +410,6 @@ function handleCellClick(event) {
 function handlePlayAgain() {
     if (!roomRef) return;
     
-    // Lawan bisa menjadi P2 yang kosong jika lawan keluar. P1 masih harus bisa reset.
-    // Jika P2 null, status akan kembali ke waiting.
     roomRef.once('value', snapshot => {
         const room = snapshot.val();
         
@@ -411,7 +422,7 @@ function handlePlayAgain() {
             winner: null,
             status: room.players.p2 ? 'playing' : 'waiting' // Jika P2 ada, lanjutkan bermain.
         }).then(() => {
-            console.log('Permainan direset oleh P1.');
+            console.log('Permainan direset.');
         });
         
         playAgainBtn.classList.add('hidden');
