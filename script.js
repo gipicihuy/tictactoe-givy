@@ -57,7 +57,7 @@ const leaveRoomBtn = document.getElementById('leave-room-btn');
 function sanitizeInput(str) {
     if (!str) return '';
     // Hapus semua tag HTML, yang merupakan sumber utama XSS.
-    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;');
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 /**
@@ -65,7 +65,7 @@ function sanitizeInput(str) {
  */
 function generateRoomID() {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `GIVY-${randomNum}`;
+    return `givy-${randomNum}`;
 }
 
 /**
@@ -117,7 +117,7 @@ function generateBoardHTML() {
         const cell = document.createElement('div');
         cell.classList.add('cell');
         cell.dataset.index = i;
-        cell.addEventListener('click', (e) => executeMove(parseInt(e.target.dataset.index)));
+        cell.addEventListener('click', handleCellClick);
         boardElement.appendChild(cell);
     }
 }
@@ -270,7 +270,6 @@ function joinRoomSuccess() {
     console.log("✔️ Mulai mendengarkan pembaruan realtime.");
 }
 
-
 // =======================================================
 // FIREBASE REALTIME UPDATE HANDLER & GAME LOGIC
 // =======================================================
@@ -295,73 +294,6 @@ function checkWin(board) {
 }
 
 /**
- * LOGIKA BOT (AI)
- * Menemukan langkah terbaik untuk marker yang diberikan.
- */
-function findBestMove(board, myMarker, opponentMarker) {
-    const emptyCells = board.map((val, idx) => val === "" ? idx : -1).filter(idx => idx !== -1);
-    
-    // 1. Cek langkah yang bisa memenangkan game
-    for (const index of emptyCells) {
-        board[index] = myMarker;
-        if (checkWin(board)) {
-            board[index] = ""; // Reset
-            return index;
-        }
-        board[index] = ""; // Reset
-    }
-
-    // 2. Cek langkah yang bisa memblokir lawan
-    for (const index of emptyCells) {
-        board[index] = opponentMarker;
-        if (checkWin(board)) {
-            board[index] = ""; // Reset
-            return index;
-        }
-        board[index] = ""; // Reset
-    }
-
-    // 3. Ambil posisi yang strategis
-    const center = 4;
-    const corners = [0, 2, 6, 8];
-    const sides = [1, 3, 5, 7];
-
-    // Ambil Center
-    if (board[center] === "") return center;
-
-    // Ambil Corner yang kosong
-    for (const index of corners) {
-        if (board[index] === "") return index;
-    }
-
-    // Ambil Side yang kosong
-    for (const index of sides) {
-        if (board[index] === "") return index;
-    }
-
-    // Jika tidak ada pilihan
-    return emptyCells.length > 0 ? emptyCells[0] : -1;
-}
-
-/**
- * Menjalankan langkah otomatis untuk bot "givy".
- */
-function autoMove(currentBoard) {
-    const myMarker = playerID === 'p1' ? 'X' : 'O';
-    const opponentMarker = playerID === 'p1' ? 'O' : 'X';
-    
-    const bestIndex = findBestMove(currentBoard, myMarker, opponentMarker);
-
-    if (bestIndex !== -1) {
-        console.log(`🤖 GIVY BOT (Tersembunyi): Langkah otomatis ke indeks ${bestIndex}.`);
-        // Beri delay 500ms agar terlihat seperti langkah manusia/bot yang memproses
-        setTimeout(() => {
-            executeMove(bestIndex);
-        }, 500);
-    }
-}
-
-/**
  * Menangani pembaruan realtime dari Firebase.
  */
 function handleRoomUpdate(snapshot) {
@@ -371,6 +303,7 @@ function handleRoomUpdate(snapshot) {
         console.warn('Data ruangan null. Lawan mungkin telah menghapus ruangan.');
         statusMessage.textContent = 'Lawan keluar, ruangan dihapus. Mengalihkan...';
         roomRef.off();
+        // Redirect ke setup screen setelah 3 detik
         setTimeout(() => window.location.href = window.location.origin + window.location.pathname, 3000); 
         return;
     }
@@ -418,16 +351,6 @@ function handleRoomUpdate(snapshot) {
             statusMessage.innerHTML = `<i class="fas fa-user-slash"></i> Pemain ${opponentNickname} keluar. Menunggu pemain baru...`;
             return;
         }
-        
-        // >>> LOGIKA OTOMATIS BOT "GIVY" DITAMBAHKAN DI SINI <<<
-        const isGivyBot = (nickname.toLowerCase() === 'givy');
-        if (isGivyBot && turn === playerID) {
-            autoMove(board);
-            // KARENA BOT SUDAH JALAN OTOMATIS, JANGAN TAMPILKAN PESAN GILIRAN ANDA
-            return;
-        }
-        // >>> AKHIR LOGIKA OTOMATIS BOT "GIVY" <<<
-
         if (turn === playerID) {
             statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!`;
         } else {
@@ -447,9 +370,9 @@ function handleRoomUpdate(snapshot) {
 }
 
 /**
- * Fungsi inti untuk mengeksekusi langkah pemain (dipanggil oleh klik atau bot).
+ * Menangani klik sel (langkah pemain).
  */
-function executeMove(index) {
+function handleCellClick(event) {
     if (!roomRef || !playerID) return;
 
     roomRef.once('value', snapshot => {
@@ -457,6 +380,7 @@ function executeMove(index) {
         if (!room) return;
         
         const { board, turn, status } = room;
+        const index = parseInt(event.target.dataset.index);
         const myMarker = playerID === 'p1' ? 'X' : 'O';
 
         if (status !== 'playing' || turn !== playerID || board[index] !== "") {
@@ -498,10 +422,6 @@ function executeMove(index) {
     });
 }
 
-// =======================================================
-// EVENT LISTENERS & INITIAL SETUP
-// =======================================================
-
 /**
  * Mereset papan untuk permainan baru.
  */
@@ -525,6 +445,10 @@ function handlePlayAgain() {
         playAgainBtn.classList.add('hidden');
     });
 }
+
+// =======================================================
+// LOGIKA KELUAR RUANGAN (Keluar Bersih)
+// =======================================================
 
 /**
  * Menangani proses keluar dari ruangan.
@@ -577,6 +501,10 @@ function resetClientState() {
     
     window.location.href = window.location.origin + window.location.pathname;
 }
+
+// =======================================================
+// EVENT LISTENERS & INITIAL SETUP
+// =======================================================
 
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomAutoBtn.addEventListener('click', () => {
