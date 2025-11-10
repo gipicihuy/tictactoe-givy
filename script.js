@@ -44,6 +44,8 @@ const shareLinkContainer = document.getElementById('share-link-container');
 const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const roomIDDisplay = document.getElementById('room-id-display');
+// REFERENSI DOM BARU UNTUK SKOR
+const scoreDisplay = document.getElementById('score-display'); 
 
 // =======================================================
 // UTILITY FUNCTIONS
@@ -154,7 +156,9 @@ function createRoom() {
         players: { p1: nickname },
         turn: 'p1',
         winner: null,
-        status: 'waiting'
+        status: 'waiting',
+        // INISIALISASI SKOR
+        score: { p1: 0, p2: 0 }
     };
 
     roomRef.set(initialRoomState)
@@ -284,7 +288,8 @@ function handleRoomUpdate(snapshot) {
         return;
     }
 
-    const { board, players, turn, winner, status } = room;
+    // EKSTRAK 'score' DARI DATA RUANGAN
+    const { board, players, turn, winner, status, score } = room;
     const opponentNickname = playerID === 'p1' ? (players.p2 || 'Pemain Lain') : (players.p1 || 'Pemain Lain');
     const myMarker = playerID === 'p1' ? 'X' : 'O';
 
@@ -292,6 +297,16 @@ function handleRoomUpdate(snapshot) {
     playAgainBtn.classList.add('hidden');
     shareLinkContainer.classList.add('hidden');
     
+    // PERBARUI TAMPILAN SKOR
+    const p1Nickname = players.p1 || 'P1 (X)';
+    const p2Nickname = players.p2 || 'P2 (O)';
+
+    if (score) {
+        scoreDisplay.textContent = `${p1Nickname} (X): ${score.p1 || 0} | ${p2Nickname} (O): ${score.p2 || 0}`;
+    } else {
+        scoreDisplay.textContent = `${p1Nickname} (X): 0 | ${p2Nickname} (O): 0`;
+    }
+
     // Update Status Message
     if (status === 'waiting') {
         statusMessage.innerHTML = `<i class="fas fa-hourglass-half"></i> Menunggu ${opponentNickname} bergabung...`;
@@ -345,21 +360,30 @@ function handleCellClick(event) {
         let newTurn = playerID === 'p1' ? 'p2' : 'p1';
         let newStatus = 'playing';
         let winner = null;
-
-        if (winningCombo) {
-            newStatus = 'finished';
-            winner = playerID;
-        } else if (!board.includes("")) {
-            newStatus = 'finished';
-            winner = 'draw';
-        }
-
-        roomRef.update({
+        
+        // Data yang akan di-update
+        const updates = {
             board: board,
             turn: newTurn,
             status: newStatus,
             winner: winner
-        }).then(() => {
+        };
+
+        if (winningCombo) {
+            newStatus = 'finished';
+            winner = playerID;
+            updates.status = 'finished';
+            updates.winner = winner;
+            // TAMBAHKAN UPDATE SKOR
+            updates[`score/${playerID}`] = firebase.database.ServerValue.increment(1);
+        } else if (!board.includes("")) {
+            newStatus = 'finished';
+            winner = 'draw';
+            updates.status = 'finished';
+            updates.winner = 'draw';
+        }
+
+        roomRef.update(updates).then(() => {
             console.log(`Langkah berhasil di indeks ${index}. Giliran baru: ${newTurn}. Status: ${newStatus}`);
         }).catch(error => {
             console.error('Error memperbarui langkah:', error);
@@ -373,21 +397,19 @@ function handleCellClick(event) {
 function handlePlayAgain() {
     if (!roomRef) return;
     
-    if (playerID !== 'p1') {
-        alert('Hanya Pemain 1 (X) yang dapat memulai ulang permainan.');
-        return;
-    }
-
+    // Lawan bisa menjadi P2 yang kosong jika lawan keluar. P1 masih harus bisa reset.
+    // Jika P2 null, status akan kembali ke waiting.
     roomRef.once('value', snapshot => {
         const room = snapshot.val();
         
         if (room.status !== 'finished') return;
 
+        // Reset hanya papan dan giliran, skor tetap.
         roomRef.update({
             board: Array(9).fill(""),
             turn: 'p1',
             winner: null,
-            status: 'playing'
+            status: room.players.p2 ? 'playing' : 'waiting' // Jika P2 ada, lanjutkan bermain.
         }).then(() => {
             console.log('Permainan direset oleh P1.');
         });
@@ -428,12 +450,15 @@ window.addEventListener('beforeunload', () => {
         roomRef.off();
         console.log(`Membersihkan ${playerID} saat disconnect...`);
 
+        // Hapus player dari slot saat disconnect
         const playerSlotRef = roomRef.child('players').child(playerID);
         playerSlotRef.onDisconnect().remove();
 
         if (playerID === 'p1') {
+            // P1 keluar: Hapus seluruh ruangan
             roomRef.remove();
         } else if (playerID === 'p2') {
+            // P2 keluar: Kosongkan slot P2 dan ubah status menjadi waiting
             roomRef.update({
                 'players/p2': null,
                 status: 'waiting'
