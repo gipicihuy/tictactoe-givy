@@ -10,7 +10,7 @@ body {
     background: linear-gradient(135deg, #1a1a1a 0%, #2d1818 100%);
     color: #f5f5f5;
     min-height: 100vh;
-    padding: 10px; /* Padding dikurangi */
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,32 +18,32 @@ body {
 }
 
 h1 {
-    margin-bottom: 20px; /* Margin dikurangi */
+    margin-bottom: 30px;
     color: #FF5252;
-    font-size: 2.2em; /* Ukuran font H1 dikurangi */
-    text-shadow: 0 0 15px rgba(255, 82, 82, 0.5);
+    font-size: 2.5em;
+    text-shadow: 0 0 20px rgba(255, 82, 82, 0.5);
 }
 
 h2 {
-    margin: 15px 0; /* Margin dikurangi */
+    margin: 20px 0;
     color: #f5f5f5;
-    font-size: 1.2em; /* Ukuran font H2 dikurangi */
+    font-size: 1.3em;
 }
 
 p {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: #b0b0b0;
 }
 
 /* Input */
 #nickname-input {
     width: 100%;
-    max-width: 350px; /* Max width dikurangi */
-    padding: 12px 15px; /* Padding dikurangi */
-    margin-bottom: 15px;
+    max-width: 400px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
     border: 2px solid #444;
-    border-radius: 8px;
-    font-size: 1em;
+    border-radius: 10px;
+    font-size: 1.1em;
     outline: none;
     background-color: #252525;
     color: #f5f5f5;
@@ -52,7 +52,7 @@ p {
 
 #nickname-input:focus {
     border-color: #C62828;
-    box-shadow: 0 0 10px rgba(198, 40, 40, 0.4);
+    box-shadow: 0 0 15px rgba(198, 40, 40, 0.4);
 }
 
 #nickname-input::placeholder {
@@ -61,96 +61,230 @@ p {
 
 /* Buttons */
 button {
-    padding: 10px 20px; /* Padding dikurangi */
-    margin: 5px; /* Margin dikurangi */
+    padding: 15px 30px;
+    margin: 8px;
     border: none;
-    border-radius: 8px;
-    font-size: 1em;
+    border-radius: 10px;
+    font-size: 1.1em;
     font-weight: 600;
     cursor: pointer;
     background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
     color: white;
     transition: all 0.3s;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    min-width: 160px; /* Min width dikurangi */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    min-width: 180px;
 }
 
 button:hover {
     background: linear-gradient(135deg, #B71C1C 0%, #8B0000 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(198, 40, 40, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(198, 40, 40, 0.6);
 }
 
-/* Board (Ukuran Default/Tablet) */
+button:active {
+    transform: translateY(0);
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Board */
 .board {
     display: grid;
-    grid-template-columns: repeat(3, 100px); /* Ukuran sel default dikurangi dari 120px */
-    grid-template-rows: repeat(3, 100px);
-    gap: 12px; /* Gap dikurangi */
-    margin: 20px auto;
+    grid-template-columns: repeat(3, 120px);
+    grid-template-rows: repeat(3, 120px);
+    gap: 15px;
+    margin: 30px auto;
 }
 
 .cell {
     background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
-    border-radius: 12px;
+    border-radius: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3.5em; /* Ukuran font ikon dikurangi */
+    font-size: 4em;
     cursor: pointer;
     transition: all 0.3s;
     border: 3px solid #333;
 }
 
-/* ... (Gaya cell.x, cell.o, cell.winning, @keyframes pulse tetap) ... */
+.cell:hover:not(.x):not(.o) {
+    background: linear-gradient(135deg, #3d3d3d 0%, #2a2a2a 100%);
+    transform: scale(1.05);
+    border-color: #C62828;
+    box-shadow: 0 0 20px rgba(198, 40, 40, 0.4);
+}
+
+.cell.x {
+    color: #FF5252;
+    background: linear-gradient(135deg, #2d1a1a 0%, #1a0f0f 100%);
+    border-color: #FF5252;
+    text-shadow: 0 0 20px rgba(255, 82, 82, 0.8);
+}
+
+.cell.o {
+    color: #FFA726;
+    background: linear-gradient(135deg, #2d2314 0%, #1a1609 100%);
+    border-color: #FFA726;
+    text-shadow: 0 0 20px rgba(255, 167, 38, 0.8);
+}
+
+.cell.winning {
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from {
+        box-shadow: 0 0 15px 5px #C62828;
+        transform: scale(1);
+    }
+    to {
+        box-shadow: 0 0 30px 10px #C62828;
+        transform: scale(1.08);
+    }
+}
+
+/* Status */
+#status-message {
+    min-height: 35px;
+    margin: 20px 0;
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #f5f5f5;
+}
+
 
 /* GAYA SKOR YANG DIPERBAIKI */
 #score-display {
-    font-size: 1.1em; /* Ukuran font skor dikurangi */
-    padding: 8px 15px;
-    gap: 10px; 
-    /* ... (gaya lainnya tetap) ... */
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #f5f5f5; 
+    margin: 15px 0;
+    padding: 10px 20px;
+    background-color: #252525;
+    border: 2px solid #444;
+    border-radius: 10px;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    gap: 15px; 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
+.player-score {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.player-score .player-name {
+    font-weight: 400; 
+    color: #b0b0b0; 
+}
+
+/* Warna Khusus untuk Nilai Skor */
 .score-value {
-    font-size: 1.2em; /* Nilai skor dikurangi */
+    font-size: 1.4em;
     font-weight: 800; 
-    padding: 0 3px;
+    padding: 0 5px;
+}
+
+/* Warna Skor P1 (X) - Merah */
+.p1-score .score-value {
+    color: #FF5252; 
+}
+
+/* Warna Skor P2 (O) - Oranye */
+.p2-score .score-value {
+    color: #FFA726;
 }
 
 .score-separator {
-    font-size: 1.3em;
+    color: #666;
+    font-size: 1.5em;
+    padding: 0 10px;
+}
+/* AKHIR GAYA SKOR YANG DIPERBAIKI */
+
+
+#room-id-display {
+    font-size: 1em;
+    color: #FFA726;
+    margin-bottom: 15px;
+    padding: 10px 20px;
+    background-color: rgba(198, 40, 40, 0.15);
+    border-radius: 10px;
+    border: 2px solid rgba(198, 40, 40, 0.3);
+    display: inline-block;
 }
 
-/* Responsive: MOBILE (Layar kecil di bawah 500px) */
-@media (max-width: 500px) {
-    h1 {
-        font-size: 2em;
-    }
-    
-    .button-group {
-        flex-direction: column; /* Tombol jadi vertikal */
-        gap: 10px;
-    }
+/* Share Link */
+#share-link-container {
+    margin: 20px 0;
+    max-width: 500px;
+}
 
+.share-box {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#share-link-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 2px solid #444;
+    border-radius: 10px;
+    font-size: 0.95em;
+    background-color: #252525;
+    color: #f5f5f5;
+}
+
+#copy-link-btn {
+    background: linear-gradient(135deg, #455A64 0%, #37474F 100%);
+    min-width: 120px;
+}
+
+#copy-link-btn:hover {
+    background: linear-gradient(135deg, #37474F 0%, #263238 100%);
+}
+
+#nickname-save-status {
+    color: #FFA726;
+    font-weight: 600;
+    min-height: 25px;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    transition: opacity 0.5s;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
     .board {
-        grid-template-columns: repeat(3, 80px); /* Ukuran sel untuk mobile dikurangi menjadi 80px */
-        grid-template-rows: repeat(3, 80px);
-        gap: 8px; /* Gap dikurangi */
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 10px;
     }
     
     .cell {
         font-size: 3em;
-        border-radius: 10px;
-    }
-
-    #score-display {
-        flex-direction: column; /* Skor ditumpuk agar tidak terlalu lebar */
-        gap: 5px;
-        padding: 10px;
     }
     
-    .score-separator {
-        display: none; /* Pisahkan dihapus saat ditumpuk */
+    button {
+        min-width: 150px;
+        padding: 12px 20px;
     }
 }
