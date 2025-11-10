@@ -44,12 +44,20 @@ const shareLinkContainer = document.getElementById('share-link-container');
 const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const roomIDDisplay = document.getElementById('room-id-display');
-// REFERENSI DOM BARU UNTUK SKOR
 const scoreDisplay = document.getElementById('score-display'); 
 
 // =======================================================
 // UTILITY FUNCTIONS
 // =======================================================
+
+/**
+ * Membersihkan string dari tag HTML dan karakter yang dapat dieksekusi (Anti-XSS).
+ */
+function sanitizeInput(str) {
+    if (!str) return '';
+    // Hapus semua tag HTML, yang merupakan sumber utama XSS.
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 
 /**
  * Membuat ID ruangan acak GIVY-XXXX.
@@ -71,11 +79,18 @@ function getRoomIDFromURL() {
  * Menyimpan nama panggilan ke local storage.
  */
 function saveNickname() {
-    nicknameInput.value = nicknameInput.value.trim();
-    if (!nicknameInput.value) return false;
+    // >> Sanitasi input sebelum digunakan atau disimpan
+    const rawInput = nicknameInput.value.trim();
+    const sanitizedNickname = sanitizeInput(rawInput);
     
-    localStorage.setItem('givy-tictactoe-nickname', nicknameInput.value);
-    nickname = nicknameInput.value;
+    if (!sanitizedNickname) {
+        alert('Silakan masukkan nama panggilan yang valid.');
+        return false;
+    }
+    
+    localStorage.setItem('givy-tictactoe-nickname', sanitizedNickname);
+    nickname = sanitizedNickname;
+    nicknameInput.value = sanitizedNickname; // Update UI dengan nama yang sudah bersih
     document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
     setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 2000);
     return true;
@@ -87,8 +102,10 @@ function saveNickname() {
 function loadNickname() {
     const savedName = localStorage.getItem('givy-tictactoe-nickname');
     if (savedName) {
-        nicknameInput.value = savedName;
-        nickname = savedName;
+        // >> Sanitasi juga data yang dimuat
+        const sanitizedName = sanitizeInput(savedName);
+        nicknameInput.value = sanitizedName;
+        nickname = sanitizedName;
     }
 }
 
@@ -153,11 +170,11 @@ function createRoom() {
 
     const initialRoomState = {
         board: Array(9).fill(""),
-        players: { p1: nickname },
+        // Menggunakan nickname yang sudah di-sanitasi
+        players: { p1: nickname }, 
         turn: 'p1',
         winner: null,
         status: 'waiting',
-        // INISIALISASI SKOR
         score: { p1: 0, p2: 0 }
     };
 
@@ -201,8 +218,13 @@ function joinRoom(id) {
             return;
         }
 
-        const isP1 = room.players.p1 === nickname;
-        const isP2 = room.players.p2 === nickname;
+        // Amankan nilai nickname dari Firebase
+        const p1NicknameSafe = sanitizeInput(room.players.p1);
+        const p2NicknameSafe = room.players.p2 ? sanitizeInput(room.players.p2) : null;
+
+
+        const isP1 = p1NicknameSafe === nickname;
+        const isP2 = p2NicknameSafe === nickname;
 
         if (isP1) {
             playerID = 'p1';
@@ -211,7 +233,8 @@ function joinRoom(id) {
         } else if (!room.players.p2) {
             playerID = 'p2';
             roomRef.update({
-                'players/p2': nickname,
+                // Menggunakan nickname yang sudah di-sanitasi
+                'players/p2': nickname, 
                 status: 'playing'
             }).then(() => {
                 console.log(`🟢 BERHASIL: Bergabung ke ruangan ${roomID} sebagai P2.`);
@@ -288,18 +311,20 @@ function handleRoomUpdate(snapshot) {
         return;
     }
 
-    // EKSTRAK 'score' DARI DATA RUANGAN
     const { board, players, turn, winner, status, score } = room;
-    const opponentNickname = playerID === 'p1' ? (players.p2 || 'Pemain Lain') : (players.p1 || 'Pemain Lain');
+    
+    // >> Sanitasi SEMUA nickname dari Firebase saat digunakan di UI
+    const p1Nickname = players.p1 ? sanitizeInput(players.p1) : 'P1 (X)';
+    const p2Nickname = players.p2 ? sanitizeInput(players.p2) : 'P2 (O)';
+    const opponentNickname = playerID === 'p1' ? p2Nickname : p1Nickname;
+
     const myMarker = playerID === 'p1' ? 'X' : 'O';
 
     updateBoardUI(board, winner && winner !== 'draw' ? checkWin(board) : null);
     playAgainBtn.classList.add('hidden');
     shareLinkContainer.classList.add('hidden');
     
-    // PERBARUI TAMPILAN SKOR (MENGGUNAKAN HTML UNTUK GAYA VISUAL BARU)
-    const p1Nickname = players.p1 || 'P1 (X)';
-    const p2Nickname = players.p2 || 'P2 (O)';
+    // PERBARUI TAMPILAN SKOR
     const scoreP1 = score ? (score.p1 || 0) : 0;
     const scoreP2 = score ? (score.p2 || 0) : 0;
 
@@ -316,7 +341,6 @@ function handleRoomUpdate(snapshot) {
             </span>
         `;
     } else {
-        // Tampilan default jika skor belum terinisialisasi
         scoreDisplay.innerHTML = `${p1Nickname} (X): 0 | ${p2Nickname} (O): 0`;
     }
 
@@ -374,7 +398,6 @@ function handleCellClick(event) {
         let newStatus = 'playing';
         let winner = null;
         
-        // Data yang akan di-update
         const updates = {
             board: board,
             turn: newTurn,
@@ -387,7 +410,6 @@ function handleCellClick(event) {
             winner = playerID;
             updates.status = 'finished';
             updates.winner = winner;
-            // UPDATE SKOR menggunakan ServerValue.increment() secara atomik
             updates[`score/${playerID}`] = firebase.database.ServerValue.increment(1);
         } else if (!board.includes("")) {
             newStatus = 'finished';
@@ -415,12 +437,11 @@ function handlePlayAgain() {
         
         if (room.status !== 'finished') return;
 
-        // Reset hanya papan dan giliran, skor tetap.
         roomRef.update({
             board: Array(9).fill(""),
             turn: 'p1',
             winner: null,
-            status: room.players.p2 ? 'playing' : 'waiting' // Jika P2 ada, lanjutkan bermain.
+            status: room.players.p2 ? 'playing' : 'waiting' 
         }).then(() => {
             console.log('Permainan direset.');
         });
@@ -461,15 +482,12 @@ window.addEventListener('beforeunload', () => {
         roomRef.off();
         console.log(`Membersihkan ${playerID} saat disconnect...`);
 
-        // Hapus player dari slot saat disconnect
         const playerSlotRef = roomRef.child('players').child(playerID);
         playerSlotRef.onDisconnect().remove();
 
         if (playerID === 'p1') {
-            // P1 keluar: Hapus seluruh ruangan
             roomRef.remove();
         } else if (playerID === 'p2') {
-            // P2 keluar: Kosongkan slot P2 dan ubah status menjadi waiting
             roomRef.update({
                 'players/p2': null,
                 status: 'waiting'
