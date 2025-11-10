@@ -1,0 +1,210 @@
+/* Basic Reset and Variables */
+:root {
+    --primary-color: #4CAF50; /* Green */
+    --accent-x: #E91E63; /* Pink for X */
+    --accent-o: #2196F3; /* Blue for O */
+    --bg-color: #f0f2f5;
+    --text-color: #333;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --hover-bg: #e0e0e0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Container and Headings */
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    max-width: 450px;
+    width: 100%;
+    transition: all 0.3s ease-in-out;
+}
+
+h1 {
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    font-size: 2.5em;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+/* Inputs and Buttons */
+#nickname-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#nickname-input:focus {
+    border-color: var(--primary-color);
+}
+
+.button-group button,
+#play-again-btn,
+#copy-link-btn {
+    padding: 12px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+#create-room-btn, #join-room-auto-btn, #play-again-btn {
+    background-color: var(--primary-color);
+    color: white;
+    flex: 1; /* For button group */
+}
+
+#create-room-btn:hover, #join-room-auto-btn:hover, #play-again-btn:hover {
+    background-color: #43A047;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#create-room-btn:active, #join-room-auto-btn:active, #play-again-btn:active {
+    transform: translateY(0);
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* Tic-Tac-Toe Board */
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 350px; /* Limit board size */
+    aspect-ratio: 1 / 1; /* Keep it square */
+}
+
+.cell {
+    background-color: var(--hover-bg);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s, transform 0.1s, color 0.2s;
+}
+
+.cell:hover:not(.x):not(.o) {
+    background-color: #d1d1d1;
+    transform: scale(1.05);
+}
+
+.cell.x {
+    color: var(--accent-x);
+    background-color: #ffe0f0;
+}
+
+.cell.o {
+    color: var(--accent-o);
+    background-color: #e3f2fd;
+}
+
+.cell.winning {
+    animation: pulse 1s infinite alternate;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+/* Animation for winning cells */
+@keyframes pulse {
+    from {
+        opacity: 1;
+        box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+    }
+    to {
+        opacity: 0.8;
+        box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.5);
+    }
+}
+
+
+/* Status and Share Link */
+#status-message {
+    min-height: 25px;
+    margin: 15px 0;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+#room-id-display {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.share-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#share-link-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.9em;
+    background-color: #eee;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#copy-link-btn {
+    background-color: #607D8B; /* Grey/Blue */
+    color: white;
+}
+
+#copy-link-btn:hover {
+    background-color: #546E7A;
+}
+
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    transition: opacity 0.5s ease-in-out;
+}
