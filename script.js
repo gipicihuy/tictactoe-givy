@@ -2,6 +2,7 @@
 // FIREBASE CONFIGURATION & INITIALIZATION
 // =======================================================
 
+// Pastikan Anda mengganti ini dengan konfigurasi Firebase Anda sendiri!
 const firebaseConfig = {
   apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
   authDomain: "tictactoe-givy.firebaseapp.com",
@@ -20,7 +21,9 @@ if (!firebase.apps.length) {
 }
 const database = firebase.database();
 const roomsRef = database.ref('rooms');
+const scoresRef = database.ref('scores'); // <-- BARU: Referensi untuk Skor
 console.log(`✔️ Referensi rooms dibuat.`);
+console.log(`✔️ Referensi scores dibuat.`); // <-- BARU
 
 // =======================================================
 // GLOBAL STATE & DOM REFERENCES
@@ -40,211 +43,141 @@ const joinRoomAutoBtn = document.getElementById('join-room-auto-btn');
 const statusMessage = document.getElementById('status-message');
 const boardElement = document.getElementById('tictactoe-board');
 const playAgainBtn = document.getElementById('play-again-btn');
-const shareLinkContainer = document.getElementById('share-link-container');
 const shareLinkInput = document.getElementById('share-link-input');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const roomIDDisplay = document.getElementById('room-id-display');
+const nicknameSaveStatus = document.getElementById('nickname-save-status');
 
 // =======================================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (NICKNAME & ROOM ID)
 // =======================================================
 
-/**
- * Membuat ID ruangan acak GIVY-XXXX.
- */
-function generateRoomID() {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `GIVY-${randomNum}`;
+function saveNickname() {
+    if (nickname) {
+        localStorage.setItem('tictactoe_nickname', nickname);
+        nicknameSaveStatus.textContent = `Nama tersimpan: ${nickname}`;
+        nicknameSaveStatus.classList.add('saved');
+    }
 }
 
-/**
- * Mendapatkan ID ruangan dari parameter URL.
- */
+function loadNickname() {
+    const savedNickname = localStorage.getItem('tictactoe_nickname');
+    if (savedNickname) {
+        nickname = savedNickname;
+        nicknameInput.value = nickname;
+        nicknameSaveStatus.textContent = `Nama tersimpan: ${nickname}`;
+        nicknameSaveStatus.classList.add('saved');
+    }
+}
+
 function getRoomIDFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('room');
 }
 
+// =======================================================
+// UTILITY FUNCTIONS (SKOR BARU)
+// =======================================================
+
 /**
- * Menyimpan nama panggilan ke local storage.
+ * Mengambil skor pemain dari database dan menampilkannya.
  */
-function saveNickname() {
-    nicknameInput.value = nicknameInput.value.trim();
-    if (!nicknameInput.value) return false;
+function displayPlayerScore() {
+    const scoreDisplay = document.getElementById('my-score-display');
+    if (!nickname) {
+        scoreDisplay.textContent = 'Silakan masukkan nama...';
+        return;
+    }
     
-    localStorage.setItem('givy-tictactoe-nickname', nicknameInput.value);
-    nickname = nicknameInput.value;
-    document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
-    setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 2000);
-    return true;
-}
-
-/**
- * Memuat nama panggilan dari local storage.
- */
-function loadNickname() {
-    const savedName = localStorage.getItem('givy-tictactoe-nickname');
-    if (savedName) {
-        nicknameInput.value = savedName;
-        nickname = savedName;
-    }
-}
-
-/**
- * Membuat papan 3x3 dan menambahkan event listener.
- */
-function generateBoardHTML() {
-    boardElement.innerHTML = '';
-    for (let i = 0; i < 9; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.index = i;
-        cell.addEventListener('click', handleCellClick);
-        boardElement.appendChild(cell);
-    }
-}
-
-/**
- * Memperbarui tampilan papan permainan.
- */
-function updateBoardUI(boardState, winningCells = null) {
-    const cells = boardElement.querySelectorAll('.cell');
-    cells.forEach((cell, index) => {
-        const marker = boardState[index];
-        
-        cell.className = 'cell'; 
-        cell.dataset.index = index;
-
-        if (marker === 'X') {
-            cell.innerHTML = '<i class="fas fa-times"></i>';
-            cell.classList.add('x');
-        } else if (marker === 'O') {
-            cell.innerHTML = '<i class="far fa-circle"></i>';
-            cell.classList.add('o');
+    scoresRef.child(nickname).once('value', snapshot => {
+        const score = snapshot.val();
+        let stats;
+        if (score) {
+            stats = `W: ${score.wins || 0} | L: ${score.losses || 0} | D: ${score.draws || 0}`;
         } else {
-            cell.textContent = '';
+            stats = 'Belum ada data skor. Mulai bermain!';
         }
+        
+        scoreDisplay.innerHTML = `<i class="fas fa-trophy"></i> Statistik Anda: <strong>${stats}</strong>`;
+    });
+}
 
-        if (winningCells && winningCells.includes(index)) {
-            cell.classList.add('winning');
+/**
+ * Mengupdate skor pemain (Win, Loss, atau Draw) menggunakan transaction.
+ */
+function updatePlayerScore(playerNickname, resultType) {
+    if (!playerNickname) return;
+    
+    const playerRef = scoresRef.child(playerNickname);
+    
+    // Gunakan transaksi untuk memastikan data diupdate dengan benar saat banyak pemain mengupdate
+    playerRef.transaction((currentData) => {
+        if (currentData === null) {
+            currentData = { wins: 0, losses: 0, draws: 0 };
+        }
+        
+        if (resultType === 'win') {
+            currentData.wins = (currentData.wins || 0) + 1;
+        } else if (resultType === 'loss') {
+            currentData.losses = (currentData.losses || 0) + 1;
+        } else if (resultType === 'draw') {
+            currentData.draws = (currentData.draws || 0) + 1;
+        }
+        
+        return currentData;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error(`🔴 Transaction gagal untuk ${playerNickname}:`, error);
+        } else if (committed) {
+            console.log(`🟢 Skor ${playerNickname} diupdate: ${resultType}`);
+            displayPlayerScore(); // Refresh tampilan skor setelah update
         }
     });
 }
 
 // =======================================================
-// FIREBASE ROOM MANAGEMENT
+// GAME UI MANIPULATION
 // =======================================================
 
-/**
- * Membuat ruangan baru di Firebase Realtime Database.
- */
-function createRoom() {
-    if (!saveNickname()) {
-        alert('Silakan masukkan nama panggilan.');
-        return;
-    }
-
-    roomID = generateRoomID();
-    roomRef = roomsRef.child(roomID);
-
-    console.log(`🟡 Mencoba membuat ruangan: ${roomID}`);
-
-    const initialRoomState = {
-        board: Array(9).fill(""),
-        players: { p1: nickname },
-        turn: 'p1',
-        winner: null,
-        status: 'waiting'
-    };
-
-    roomRef.set(initialRoomState)
-        .then(() => {
-            console.log(`🟢 BERHASIL: Ruangan ${roomID} dibuat.`);
-            playerID = 'p1';
-            
-            window.history.pushState(null, '', `?room=${roomID}`);
-            
-            joinRoomSuccess();
-            const shareLink = `${window.location.origin}${window.location.pathname}?room=${roomID}`;
-            shareLinkInput.value = shareLink;
-        })
-        .catch(error => {
-            console.error("🔴 ERROR membuat ruangan:", error);
-            statusMessage.textContent = 'Gagal membuat ruangan. Periksa konsol untuk detail.';
-        });
-}
-
-/**
- * Mencoba bergabung ke ruangan yang sudah ada.
- */
-function joinRoom(id) {
-    if (!saveNickname()) {
-        alert('Silakan masukkan nama panggilan.');
-        return;
-    }
-    
-    roomID = id;
-    roomRef = roomsRef.child(roomID);
-    console.log(`🟡 Mencoba bergabung ke ruangan: ${roomID}`);
-
-    roomRef.once('value', snapshot => {
-        const room = snapshot.val();
-        
-        if (!room) {
-            console.error(`🔴 ERROR: Ruangan ${roomID} tidak ditemukan.`);
-            alert(`Ruangan ${roomID} tidak ditemukan atau sudah dihapus.`);
-            window.location.href = window.location.origin + window.location.pathname;
-            return;
-        }
-
-        const isP1 = room.players.p1 === nickname;
-        const isP2 = room.players.p2 === nickname;
-
-        if (isP1) {
-            playerID = 'p1';
-        } else if (isP2) {
-            playerID = 'p2';
-        } else if (!room.players.p2) {
-            playerID = 'p2';
-            roomRef.update({
-                'players/p2': nickname,
-                status: 'playing'
-            }).then(() => {
-                console.log(`🟢 BERHASIL: Bergabung ke ruangan ${roomID} sebagai P2.`);
-                joinRoomSuccess();
-            });
-            return;
-        } else {
-            console.error(`🔴 ERROR: Ruangan ${roomID} sudah penuh.`);
-            alert(`Ruangan ${roomID} sudah penuh.`);
-            window.location.href = window.location.origin + window.location.pathname;
-            return;
-        }
-
-        console.log(`🟢 BERHASIL: Bergabung kembali ke ruangan ${roomID} sebagai ${playerID}.`);
-        joinRoomSuccess();
-
-    }).catch(error => {
-        console.error("🔴 ERROR bergabung ke ruangan:", error);
-        alert('Terjadi kesalahan saat mencoba bergabung ke ruangan.');
-    });
-}
-
-/**
- * Setup setelah berhasil bergabung.
- */
-function joinRoomSuccess() {
-    console.log(`✨ Masuk ke layar permainan sebagai Pemain ${playerID}.`);
-    
+function showScreen(screenId) {
     setupScreen.classList.add('hidden');
-    gameScreen.classList.remove('hidden');
-    boardElement.classList.remove('hidden');
-    roomIDDisplay.textContent = `ID Ruangan: ${roomID} - Anda adalah ${playerID.toUpperCase() === 'P1' ? 'X' : 'O'}`;
-    roomIDDisplay.classList.remove('hidden');
-    generateBoardHTML();
+    gameScreen.classList.add('hidden');
+    document.getElementById(screenId).classList.remove('hidden');
+}
+
+function generateRoomID() {
+    const characters = '0123456789';
+    let result = 'GIVY-';
+    for (let i = 0; i < 4; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+function generateBoardHTML(board) {
+    boardElement.innerHTML = board.map((cell, index) => {
+        const content = cell === 'X' ? '<i class="fas fa-times"></i>' : (cell === 'O' ? '<i class="fas fa-circle-notch"></i>' : '');
+        return `<div class="cell" data-index="${index}">${content}</div>`;
+    }).join('');
+}
+
+function updateBoardUI(board, winningCombo) {
+    const cells = boardElement.querySelectorAll('.cell');
     
-    roomRef.on('value', handleRoomUpdate);
-    console.log("✔️ Mulai mendengarkan pembaruan realtime.");
+    cells.forEach((cell, index) => {
+        const content = board[index] === 'X' ? '<i class="fas fa-times"></i>' : (board[index] === 'O' ? '<i class="fas fa-circle-notch"></i>' : '');
+        cell.innerHTML = content;
+        
+        cell.classList.remove('winning-cell', 'clickable');
+        if (winningCombo && winningCombo.includes(index)) {
+            cell.classList.add('winning-cell');
+        }
+        
+        // Tandai sel yang bisa di-klik jika status 'playing' dan giliran pemain ini
+        if (board[index] === "" && playerID && statusMessage.textContent.includes('Giliran Anda')) {
+             cell.classList.add('clickable');
+        }
+    });
 }
 
 // =======================================================
@@ -252,128 +185,148 @@ function joinRoomSuccess() {
 // =======================================================
 
 const WINNING_COMBOS = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Baris
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolom
-    [0, 4, 8], [2, 4, 6]             // Diagonal
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+    [0, 4, 8], [2, 4, 6]             // diagonals
 ];
 
-/**
- * Memeriksa apakah ada pemenang.
- */
 function checkWin(board) {
     for (const combo of WINNING_COMBOS) {
         const [a, b, c] = combo;
         if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return combo;
+            return combo; // Mengembalikan kombinasi pemenang
         }
     }
     return null;
 }
 
 /**
- * Menangani pembaruan realtime dari Firebase.
+ * Menangani pembaruan realtime dari Firebase. (DIMODIFIKASI)
  */
 function handleRoomUpdate(snapshot) {
     const room = snapshot.val();
     
     if (!room) {
-        console.warn('Data ruangan null. Lawan mungkin telah menghapus ruangan.');
-        statusMessage.textContent = 'Lawan keluar, ruangan dihapus. Mengalihkan...';
-        roomRef.off();
-        setTimeout(() => window.location.href = window.location.origin + window.location.pathname, 3000);
+        // Logika saat ruangan dihapus (P1 disconnect)
+        showScreen('setup-screen');
+        roomIDDisplay.classList.add('hidden');
+        if (roomRef) {
+             roomRef.off();
+        }
+        roomRef = null;
+        statusMessage.textContent = "Ruangan ditutup oleh host (P1).";
+        console.log("🔴 Ruangan tidak ada atau telah dihapus.");
         return;
     }
 
-    const { board, players, turn, winner, status } = room;
-    const opponentNickname = playerID === 'p1' ? (players.p2 || 'Pemain Lain') : (players.p1 || 'Pemain Lain');
-    const myMarker = playerID === 'p1' ? 'X' : 'O';
-
-    updateBoardUI(board, winner && winner !== 'draw' ? checkWin(board) : null);
-    playAgainBtn.classList.add('hidden');
-    shareLinkContainer.classList.add('hidden');
+    const { board, players, turn, winner, status, scoreUpdated } = room; // <-- Tambah scoreUpdated
     
-    // Update Status Message
+    // Perbarui Tampilan Umum
+    showScreen('game-screen');
+    boardElement.classList.remove('hidden');
+    roomIDDisplay.textContent = `Room ID: ${roomID}`;
+    roomIDDisplay.classList.remove('hidden');
+    
+    const opponentNickname = playerID === 'p1' ? players.p2 : players.p1;
+    const playerMark = playerID === 'p1' ? 'X' : 'O';
+    const opponentMark = playerID === 'p1' ? 'O' : 'X';
+    
+    // Logika untuk Update Status dan Skor
     if (status === 'waiting') {
-        statusMessage.innerHTML = `<i class="fas fa-hourglass-half"></i> Menunggu ${opponentNickname} bergabung...`;
-        if (playerID === 'p1') {
-            shareLinkContainer.classList.remove('hidden');
-        }
+        statusMessage.innerHTML = `Menunggu lawan bergabung... (Anda: ${playerMark})`;
+        boardElement.classList.add('disabled');
+        shareLinkInput.value = window.location.origin + window.location.pathname + `?room=${roomID}`;
+        shareLinkContainer.classList.remove('hidden');
     } else if (status === 'playing') {
-        if (!players.p2) {
-            statusMessage.innerHTML = `<i class="fas fa-user-slash"></i> Pemain ${opponentNickname} keluar. Menunggu pemain baru...`;
-            return;
-        }
+        shareLinkContainer.classList.add('hidden');
+        boardElement.classList.remove('disabled');
+        
         if (turn === playerID) {
-            statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!`;
+            statusMessage.innerHTML = `Giliran Anda (${playerMark}). Lawan: ${opponentNickname} (${opponentMark})`;
         } else {
-            statusMessage.innerHTML = `<i class="fas fa-clock"></i> Giliran ${opponentNickname}.`;
+            statusMessage.innerHTML = `Giliran ${opponentNickname} (${opponentMark}). Lawan: Anda (${playerMark})`;
         }
     } else if (status === 'finished') {
-        if (winner === 'draw') {
-            statusMessage.innerHTML = '<i class="fas fa-handshake"></i> Seri (Draw)!';
-        } else if (winner === playerID) {
-            statusMessage.innerHTML = `<i class="fas fa-trophy"></i> Anda Menang! (${myMarker} adalah pemenang)`;
-        } else {
-            const winnerMarker = winner === 'p1' ? 'X' : 'O';
-            statusMessage.innerHTML = `<i class="fas fa-sad-tear"></i> ${opponentNickname} Menang! (${winnerMarker} adalah pemenang)`;
+        
+        // LOGIKA UPDATE SKOR HANYA SEKALI
+        if (!scoreUpdated && players.p2) { // Pastikan P2 ada dan skor belum diupdate
+            const p1Nickname = players.p1;
+            const p2Nickname = players.p2;
+
+            if (winner === 'draw') {
+                updatePlayerScore(p1Nickname, 'draw');
+                updatePlayerScore(p2Nickname, 'draw');
+            } else if (winner === 'p1') {
+                updatePlayerScore(p1Nickname, 'win');
+                updatePlayerScore(p2Nickname, 'loss');
+            } else if (winner === 'p2') {
+                updatePlayerScore(p1Nickname, 'loss');
+                updatePlayerScore(p2Nickname, 'win');
+            }
+            
+            // Tandai bahwa skor sudah diupdate
+            roomRef.update({ scoreUpdated: true }); 
         }
-        playAgainBtn.classList.remove('hidden');
+
+        // Tampilkan hasil
+        if (winner === 'draw') {
+            statusMessage.innerHTML = `<i class="fas fa-handshake"></i> **SERI!** Tidak ada yang menang.`;
+        } else if (winner === playerID) {
+            statusMessage.innerHTML = `<i class="fas fa-trophy"></i> **ANDA MENANG!** (Pemain ${playerID})`;
+        } else {
+            statusMessage.innerHTML = `<i class="fas fa-frown"></i> **ANDA KALAH.** Pemenangnya adalah ${opponentNickname}.`;
+        }
+        
+        boardElement.classList.add('disabled');
+        if (playerID === 'p1') { // Hanya P1 yang bisa menampilkan tombol Main Lagi
+            playAgainBtn.classList.remove('hidden');
+        }
     }
+    
+    // Update Board UI setelah status diproses
+    updateBoardUI(board, winner && winner !== 'draw' ? checkWin(board) : null);
 }
 
-/**
- * Menangani klik sel (langkah pemain).
- */
 function handleCellClick(event) {
-    if (!roomRef || !playerID) return;
+    if (!roomRef || !playerID || !event.target.classList.contains('cell')) return;
 
     roomRef.once('value', snapshot => {
         const room = snapshot.val();
-        if (!room) return;
+        if (!room || room.status !== 'playing' || room.turn !== playerID || room.winner) return;
+
+        const cellIndex = parseInt(event.target.dataset.index);
         
-        const { board, turn, status } = room;
-        const index = parseInt(event.target.dataset.index);
-        const myMarker = playerID === 'p1' ? 'X' : 'O';
+        if (room.board[cellIndex] === "") {
+            const newBoard = [...room.board];
+            const playerMark = playerID === 'p1' ? 'X' : 'O';
+            newBoard[cellIndex] = playerMark;
 
-        if (status !== 'playing' || turn !== playerID || board[index] !== "") {
-            console.log('Langkah diblokir: Status tidak valid, bukan giliran, atau sel sudah terisi.');
-            return;
+            const winningCombo = checkWin(newBoard);
+            const isDraw = !winningCombo && newBoard.every(cell => cell !== "");
+            
+            let updates = {
+                board: newBoard,
+                turn: playerID === 'p1' ? 'p2' : 'p1' // Ganti giliran
+            };
+
+            if (winningCombo) {
+                updates.winner = playerID;
+                updates.status = 'finished';
+            } else if (isDraw) {
+                updates.winner = 'draw';
+                updates.status = 'finished';
+            }
+            
+            roomRef.update(updates);
         }
-
-        board[index] = myMarker;
-        const winningCombo = checkWin(board);
-        let newTurn = playerID === 'p1' ? 'p2' : 'p1';
-        let newStatus = 'playing';
-        let winner = null;
-
-        if (winningCombo) {
-            newStatus = 'finished';
-            winner = playerID;
-        } else if (!board.includes("")) {
-            newStatus = 'finished';
-            winner = 'draw';
-        }
-
-        roomRef.update({
-            board: board,
-            turn: newTurn,
-            status: newStatus,
-            winner: winner
-        }).then(() => {
-            console.log(`Langkah berhasil di indeks ${index}. Giliran baru: ${newTurn}. Status: ${newStatus}`);
-        }).catch(error => {
-            console.error('Error memperbarui langkah:', error);
-        });
     });
 }
 
 /**
- * Mereset papan untuk permainan baru.
+ * Mereset papan untuk permainan baru. (DIMODIFIKASI)
  */
 function handlePlayAgain() {
-    if (!roomRef) return;
-    
-    if (playerID !== 'p1') {
+    if (!roomRef || playerID !== 'p1') {
         alert('Hanya Pemain 1 (X) yang dapat memulai ulang permainan.');
         return;
     }
@@ -381,18 +334,111 @@ function handlePlayAgain() {
     roomRef.once('value', snapshot => {
         const room = snapshot.val();
         
-        if (room.status !== 'finished') return;
+        // Hanya P1 yang bisa mereset setelah game finished
+        if (room.status !== 'finished' || !room.players.p2) return; 
 
         roomRef.update({
             board: Array(9).fill(""),
             turn: 'p1',
             winner: null,
-            status: 'playing'
+            status: 'playing',
+            scoreUpdated: false // <-- BARU: Reset flag skor
         }).then(() => {
             console.log('Permainan direset oleh P1.');
+            playAgainBtn.classList.add('hidden');
         });
+    });
+}
+
+// =======================================================
+// ROOM CREATION & JOINING
+// =======================================================
+
+function joinRoomSuccess(id, pID) {
+    roomID = id;
+    playerID = pID;
+    roomRef = roomsRef.child(roomID);
+    
+    // Atur listener untuk perubahan data ruangan
+    roomRef.on('value', handleRoomUpdate);
+    
+    // Siapkan UI
+    generateBoardHTML(Array(9).fill(""));
+    showScreen('game-screen');
+    console.log(`✔️ Berhasil bergabung sebagai ${playerID} di ruangan ${roomID}`);
+}
+
+/**
+ * Membuat ruangan baru di Firebase Realtime Database. (DIMODIFIKASI)
+ */
+function createRoom() {
+    if (!nickname) {
+        alert('Harap masukkan Nama Panggilan Anda.');
+        nicknameInput.focus();
+        return;
+    }
+    saveNickname();
+
+    roomID = generateRoomID();
+    roomRef = roomsRef.child(roomID);
+
+    const initialRoomState = {
+        board: Array(9).fill(""),
+        players: { p1: nickname },
+        turn: 'p1',
+        winner: null,
+        status: 'waiting',
+        scoreUpdated: false // <-- BARU: Status awal skor
+    };
+    
+    roomRef.set(initialRoomState)
+        .then(() => {
+            // Atur agar P1 terhapus jika disconnect
+            roomRef.onDisconnect().remove(); 
+            joinRoomSuccess(roomID, 'p1');
+        })
+        .catch(error => {
+            alert("Gagal membuat ruangan: " + error.message);
+        });
+}
+
+function joinRoom(id) {
+    if (!nickname) {
+        alert('Harap masukkan Nama Panggilan Anda.');
+        nicknameInput.focus();
+        return;
+    }
+    saveNickname();
+    
+    const targetRoomRef = roomsRef.child(id);
+    
+    targetRoomRef.once('value', snapshot => {
+        const room = snapshot.val();
         
-        playAgainBtn.classList.add('hidden');
+        if (!room) {
+            alert(`Ruangan ${id} tidak ditemukan.`);
+            window.history.pushState({}, '', window.location.pathname); // Hapus ?room dari URL
+            location.reload();
+            return;
+        }
+        
+        if (room.status === 'playing' && room.players.p2) {
+            alert(`Ruangan ${id} sudah penuh atau sedang bermain.`);
+            return;
+        }
+
+        // Bergabung sebagai P2
+        targetRoomRef.update({
+            'players/p2': nickname,
+            status: 'playing'
+        }).then(() => {
+            // Atur agar P2 menjadi null jika disconnect
+            targetRoomRef.child('players/p2').onDisconnect().set(null);
+            targetRoomRef.child('status').onDisconnect().set('waiting');
+            joinRoomSuccess(id, 'p2');
+        }).catch(error => {
+            alert("Gagal bergabung: " + error.message);
+        });
     });
 }
 
@@ -404,17 +450,32 @@ createRoomBtn.addEventListener('click', createRoom);
 
 joinRoomAutoBtn.addEventListener('click', () => {
     const roomFromURL = getRoomIDFromURL();
-    
-    if (!roomFromURL) {
-        alert('Untuk bergabung, Anda harus menggunakan tautan yang dibagikan oleh pembuat ruangan.');
-        return;
+    if (roomFromURL) {
+        joinRoom(roomFromURL);
+    } else {
+        const inputID = prompt("Masukkan Room ID (contoh: GIVY-1234):");
+        if (inputID) {
+            joinRoom(inputID.toUpperCase().trim());
+        }
     }
-    
-    joinRoom(roomFromURL);
 });
 
+boardElement.addEventListener('click', handleCellClick);
 playAgainBtn.addEventListener('click', handlePlayAgain);
 
+nicknameInput.addEventListener('input', (e) => {
+    nickname = e.target.value.trim().substring(0, 15);
+    nicknameSaveStatus.classList.remove('saved');
+    nicknameSaveStatus.textContent = '';
+    
+    const roomFromURL = getRoomIDFromURL();
+    if (roomFromURL && nickname) {
+         joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung ke ${roomFromURL}`;
+    }
+});
+
+
+// Logic Salin Link
 copyLinkBtn.addEventListener('click', () => {
     shareLinkInput.select();
     document.execCommand('copy');
@@ -428,16 +489,16 @@ window.addEventListener('beforeunload', () => {
         roomRef.off();
         console.log(`Membersihkan ${playerID} saat disconnect...`);
 
+        // Hapus listener onDisconnect yang sudah diatur sebelumnya
         const playerSlotRef = roomRef.child('players').child(playerID);
-        playerSlotRef.onDisconnect().remove();
+        playerSlotRef.onDisconnect().cancel();
 
+        // Atur ulang onDisconnect untuk penanganan yang lebih cepat
         if (playerID === 'p1') {
-            roomRef.remove();
+            roomRef.onDisconnect().remove();
         } else if (playerID === 'p2') {
-            roomRef.update({
-                'players/p2': null,
-                status: 'waiting'
-            });
+            roomRef.child('players/p2').onDisconnect().set(null);
+            roomRef.child('status').onDisconnect().set('waiting');
         }
     }
 });
@@ -447,6 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNickname();
     const roomFromURL = getRoomIDFromURL();
 
+    if (nickname) {
+        displayPlayerScore(); // <-- BARU: Tampilkan skor saat load
+    }
+    
     if (roomFromURL) {
         joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung ke ${roomFromURL}`;
         createRoomBtn.classList.add('hidden');
@@ -458,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Masukkan nama untuk bergabung ke ruangan ${roomFromURL}.`);
         }
     } else {
-        joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung Ruangan (via tautan)`;
+        joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung Ruangan`;
+        createRoomBtn.classList.remove('hidden');
     }
 });
