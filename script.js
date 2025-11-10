@@ -2,15 +2,16 @@
 // FIREBASE CONFIGURATION & INITIALIZATION
 // =======================================================
 
-// !!! IMPORTANT: REPLACE WITH YOUR ACTUAL FIREBASE CONFIG !!!
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
+  authDomain: "tictactoe-givy.firebaseapp.com",
+  databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tictactoe-givy",
+  storageBucket: "tictactoe-givy.firebasestorage.app",
+  messagingSenderId: "814206394475",
+  appId: "1:814206394475:web:e4a4e4ab9077b23ec7112e",
+  measurementId: "G-S7DM9SZXTJ"
 };
 
 // Initialize Firebase
