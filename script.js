@@ -2,11 +2,13 @@
 // FIREBASE CONFIGURATION & INITIALIZATION
 // =======================================================
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// script.js (Bagian atas)
+
 const firebaseConfig = {
   apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
   authDomain: "tictactoe-givy.firebaseapp.com",
-  databaseURL: "https://tictactoe-givy-default-rtdb.asia-southeast1.firebasedatabase.app",
+  // 💥 KOREKSI UTAMA ADA DI SINI: Hapus '-default-rtdb'
+  databaseURL: "https://tictactoe-givy.asia-southeast1.firebasedatabase.app", 
   projectId: "tictactoe-givy",
   storageBucket: "tictactoe-givy.firebasestorage.app",
   messagingSenderId: "814206394475",
