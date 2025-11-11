@@ -22,7 +22,8 @@ let nickname = '';
 let playerID = null;
 let roomRef = null;
 let messagesRef = null;
-let totalMessageCount = 0; // Global Counter untuk total pesan
+let totalMessageCount = 0; 
+let startingPlayer = 'p1'; // Baru: Melacak siapa yang memulai putaran saat ini
 
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
@@ -44,9 +45,8 @@ const messagesContainer = document.getElementById('messages-container');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const emojiButtons = document.querySelectorAll('.emoji-btn');
-// DOM Elements untuk Toggle Chat
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
-const totalMessageCountSpan = document.getElementById('unread-count'); // ID tetap 'unread-count'
+const totalMessageCountSpan = document.getElementById('unread-count'); 
 
 // Utility Functions
 function sanitizeInput(str) {
@@ -138,8 +138,6 @@ function sendMessage(text) {
 
     messagesRef.push(message);
     chatInput.value = '';
-    
-    // TIDAK ADA LOGIKA RESET
 }
 
 function sendEmoji(emoji) {
@@ -154,8 +152,6 @@ function sendEmoji(emoji) {
     };
 
     messagesRef.push(message);
-    
-    // TIDAK ADA LOGIKA RESET
 }
 
 function formatTime(timestamp) {
@@ -204,7 +200,6 @@ function displayMessage(messageData, messageKey) {
 }
 
 function updateTotalMessageCountDisplay() {
-    // Selalu tampilkan total chat
     totalMessageCountSpan.textContent = `(${totalMessageCount})`;
 }
 
@@ -212,10 +207,8 @@ function setupChatListener() {
     if (!messagesRef) return;
 
     // 1. Listener untuk MENGHITUNG TOTAL PESAN (Permanent Counter)
-    // Listener 'value' akan dipanggil saat pertama kali dan setiap ada perubahan (pesan baru/dihapus)
     messagesRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
-            // Dapatkan jumlah total anak (pesan) di 'messages'
             totalMessageCount = snapshot.numChildren(); 
         } else {
             totalMessageCount = 0;
@@ -223,19 +216,16 @@ function setupChatListener() {
         updateTotalMessageCountDisplay();
     });
 
-    // 2. Listener untuk MENAMPILKAN PESAN (Diperlukan agar pesan muncul satu per satu)
-    // Gunakan off() untuk memastikan hanya ada satu listener yang aktif saat fungsi dipanggil.
+    // 2. Listener untuk MENAMPILKAN PESAN
     messagesRef.off('child_added'); 
     messagesRef.on('child_added', (snapshot) => {
         const messageData = snapshot.val();
         
-        // Clear "no messages" placeholder
         if (messagesContainer.querySelector('p')) {
             messagesContainer.innerHTML = '';
         }
 
         displayMessage(messageData, snapshot.key);
-        // CATATAN: Karena listener 'value' sudah melacak total pesan, kita tidak perlu increment di sini.
     });
 }
 
@@ -256,12 +246,14 @@ function createRoom() {
         turn: 'p1',
         winner: null,
         status: 'waiting',
-        score: { p1: 0, p2: 0 }
+        score: { p1: 0, p2: 0 },
+        startingPlayer: 'p1' // P1 selalu memulai putaran pertama
     };
 
     roomRef.set(initialRoomState)
         .then(() => {
             playerID = 'p1';
+            startingPlayer = 'p1'; // Set state lokal
             window.history.pushState(null, '', `?room=${roomID}`);
             joinRoomSuccess();
             const shareLink = `${window.location.origin}${window.location.pathname}?room=${roomID}`;
@@ -324,7 +316,6 @@ function joinRoom(id) {
 // Logic untuk Toggle Chat
 function toggleChat() {
     if (window.innerWidth > 768) {
-        // Jangan lakukan apa-apa di desktop
         chatSection.classList.remove('minimized');
         document.body.style.paddingBottom = '10px';
         return;
@@ -333,9 +324,7 @@ function toggleChat() {
     const isCurrentlyMinimized = chatSection.classList.contains('minimized');
     const newMinimizedState = !isCurrentlyMinimized;
     
-    // Header height (46px dari CSS)
     const minimizedPadding = '46px'; 
-    // Full chat height (ambil dari CSS media query)
     const openPadding = window.innerWidth <= 500 ? '320px' : '350px';
 
     if (newMinimizedState) {
@@ -344,8 +333,6 @@ function toggleChat() {
     } else {
         chatSection.classList.remove('minimized');
         document.body.style.paddingBottom = openPadding;
-        
-        // TIDAK ADA LOGIKA RESET
     }
 }
 
@@ -361,10 +348,9 @@ function joinRoomSuccess() {
     roomRef.on('value', handleRoomUpdate);
     setupChatListener();
     
-    // Set chat ke minimized secara default di mobile
     if (window.innerWidth <= 768) {
         chatSection.classList.add('minimized'); 
-        document.body.style.paddingBottom = '46px'; // Start with minimized padding
+        document.body.style.paddingBottom = '46px';
     }
 }
 
@@ -395,7 +381,9 @@ function handleRoomUpdate(snapshot) {
         return;
     }
 
-    const { board, players, turn, winner, status, score } = room;
+    // Baca startingPlayer dari database
+    const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer } = room; 
+    startingPlayer = dbStartingPlayer || 'p1'; // Perbarui state lokal
 
     const p1Nickname = players.p1 ? sanitizeInput(players.p1) : 'P1 (X)';
     const p2Nickname = players.p2 ? sanitizeInput(players.p2) : 'P2 (O)';
@@ -502,11 +490,20 @@ function handlePlayAgain() {
 
         if (room.status !== 'finished') return;
 
+        // Tentukan siapa yang memulai putaran selanjutnya (Alternating)
+        const currentStartingPlayer = room.startingPlayer || 'p1'; 
+        const nextStartingPlayer = currentStartingPlayer === 'p1' ? 'p2' : 'p1';
+        
+        startingPlayer = nextStartingPlayer; 
+
         roomRef.update({
             board: Array(9).fill(""),
-            turn: 'p1',
+            // Giliran diatur ke pemain yang akan memulai
+            turn: nextStartingPlayer, 
             winner: null,
-            status: room.players.p2 ? 'playing' : 'waiting'
+            status: room.players.p2 ? 'playing' : 'waiting',
+            // Simpan startingPlayer baru ke database
+            startingPlayer: nextStartingPlayer 
         });
 
         playAgainBtn.classList.add('hidden');
@@ -539,8 +536,6 @@ function handleLeaveRoom() {
             'players/p2': null,
             status: 'waiting'
         }).then(() => {
-            resetClientState();
-        }).catch(error => {
             resetClientState();
         });
     }
