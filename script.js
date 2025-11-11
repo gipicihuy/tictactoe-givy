@@ -22,7 +22,7 @@ let nickname = '';
 let playerID = null;
 let roomRef = null;
 let messagesRef = null;
-let unreadCount = 0; // Global Counter untuk pesan baru
+let totalMessageCount = 0; // Global Counter untuk total pesan
 
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
@@ -46,8 +46,7 @@ const sendChatBtn = document.getElementById('send-chat-btn');
 const emojiButtons = document.querySelectorAll('.emoji-btn');
 // DOM Elements untuk Toggle Chat
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
-const unreadCountSpan = document.getElementById('unread-count');
-
+const totalMessageCountSpan = document.getElementById('unread-count'); // ID tetap 'unread-count'
 
 // Utility Functions
 function sanitizeInput(str) {
@@ -139,6 +138,8 @@ function sendMessage(text) {
 
     messagesRef.push(message);
     chatInput.value = '';
+    
+    // TIDAK ADA LOGIKA RESET
 }
 
 function sendEmoji(emoji) {
@@ -153,6 +154,8 @@ function sendEmoji(emoji) {
     };
 
     messagesRef.push(message);
+    
+    // TIDAK ADA LOGIKA RESET
 }
 
 function formatTime(timestamp) {
@@ -200,37 +203,39 @@ function displayMessage(messageData, messageKey) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function updateUnreadCountDisplay() {
-    // Tampilkan (Jumlah)
-    unreadCountSpan.textContent = `(${unreadCount})`;
+function updateTotalMessageCountDisplay() {
+    // Selalu tampilkan total chat
+    totalMessageCountSpan.textContent = `(${totalMessageCount})`;
 }
 
 function setupChatListener() {
     if (!messagesRef) return;
 
+    // 1. Listener untuk MENGHITUNG TOTAL PESAN (Permanent Counter)
+    // Listener 'value' akan dipanggil saat pertama kali dan setiap ada perubahan (pesan baru/dihapus)
+    messagesRef.on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            // Dapatkan jumlah total anak (pesan) di 'messages'
+            totalMessageCount = snapshot.numChildren(); 
+        } else {
+            totalMessageCount = 0;
+        }
+        updateTotalMessageCountDisplay();
+    });
+
+    // 2. Listener untuk MENAMPILKAN PESAN (Diperlukan agar pesan muncul satu per satu)
+    // Gunakan off() untuk memastikan hanya ada satu listener yang aktif saat fungsi dipanggil.
+    messagesRef.off('child_added'); 
     messagesRef.on('child_added', (snapshot) => {
         const messageData = snapshot.val();
-        const messageKey = snapshot.key;
-
+        
         // Clear "no messages" placeholder
         if (messagesContainer.querySelector('p')) {
             messagesContainer.innerHTML = '';
         }
 
-        displayMessage(messageData, messageKey);
-        
-        // --- LOGIKA HITUNGAN PESAN BARU ---
-        // Periksa apakah layar adalah mobile dan chat sedang tersembunyi
-        if (window.innerWidth <= 768 && chatSection.classList.contains('minimized')) {
-            // Hanya hitung jika di mobile DAN chat sedang tersembunyi
-            unreadCount++;
-            updateUnreadCountDisplay();
-        } else if (window.innerWidth <= 768 && !chatSection.classList.contains('minimized')) {
-            // Jika di mobile TAPI chat terbuka, pastikan count tetap 0 (langsung dibaca)
-            unreadCount = 0;
-            updateUnreadCountDisplay();
-        }
-        // Di desktop, hitungan diabaikan karena chat selalu terlihat
+        displayMessage(messageData, snapshot.key);
+        // CATATAN: Karena listener 'value' sudah melacak total pesan, kita tidak perlu increment di sini.
     });
 }
 
@@ -340,9 +345,7 @@ function toggleChat() {
         chatSection.classList.remove('minimized');
         document.body.style.paddingBottom = openPadding;
         
-        // --- LOGIKA RESET HITUNGAN KETIKA CHAT DIBUKA ---
-        unreadCount = 0;
-        updateUnreadCountDisplay();
+        // TIDAK ADA LOGIKA RESET
     }
 }
 
@@ -362,8 +365,6 @@ function joinRoomSuccess() {
     if (window.innerWidth <= 768) {
         chatSection.classList.add('minimized'); 
         document.body.style.paddingBottom = '46px'; // Start with minimized padding
-        unreadCount = 0; // Pastikan start dari 0
-        updateUnreadCountDisplay(); // Tampilkan (0)
     }
 }
 
