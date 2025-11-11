@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Givy TicTacToe - Game Multiplayer Realtime</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <link rel="stylesheet" href="style.css"> <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
-
     <h1><i class="fas fa-gamepad"></i> Givy TicTacToe</h1>
     <p id="room-id-display" class="hidden"></p>
 
@@ -25,9 +23,8 @@
 
     <div id="game-screen" class="screen hidden">
         <h2 id="status-message"></h2>
-        
         <p id="score-display"></p>
-        
+
         <div id="share-link-container" class="hidden">
             <p><i class="fas fa-share-alt"></i> Bagikan tautan ini ke temanmu:</p>
             <div class="share-box">
@@ -36,14 +33,41 @@
             </div>
         </div>
 
-        <div id="tictactoe-board" class="board hidden"></div>
-        
-        <div class="button-group">
-            <button id="play-again-btn" class="hidden"><i class="fas fa-redo"></i> Main Lagi</button>
-            <button id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Keluar Ruangan</button>
+        <div class="game-container">
+            <div class="game-left">
+                <div id="tictactoe-board" class="board hidden"></div>
+                <div class="button-group">
+                    <button id="play-again-btn" class="hidden"><i class="fas fa-redo"></i> Main Lagi</button>
+                    <button id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Keluar Ruangan</button>
+                </div>
+            </div>
+
+            <div class="chat-section hidden" id="chat-section">
+                <div class="chat-header">
+                    <i class="fas fa-comments"></i> Chat & Reaksi
+                </div>
+                <div class="emoji-picker">
+                    <button class="emoji-btn" data-emoji="😀">😀</button>
+                    <button class="emoji-btn" data-emoji="😂">😂</button>
+                    <button class="emoji-btn" data-emoji="😎">😎</button>
+                    <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                    <button class="emoji-btn" data-emoji="👍">👍</button>
+                    <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                    <button class="emoji-btn" data-emoji="😢">😢</button>
+                    <button class="emoji-btn" data-emoji="😡">😡</button>
+                    <button class="emoji-btn" data-emoji="🎉">🎉</button>
+                    <button class="emoji-btn" data-emoji="💪">💪</button>
+                </div>
+                <div class="messages-container" id="messages-container">
+                    <p style="text-align: center; color: #666; font-size: 0.9em;">Belum ada pesan</p>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ketik pesan..." maxlength="100">
+                    <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
+    <script src="script.js"></script> </body>
 </html>
