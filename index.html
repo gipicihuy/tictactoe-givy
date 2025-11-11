@@ -44,27 +44,33 @@
         </div>
         
         <div class="chat-section hidden" id="chat-section">
-            <div class="chat-header">
-                <i class="fas fa-comments"></i> Chat & Reaksi
+            <div class="chat-toggle-header" id="chat-toggle-btn">
+                <div class="chat-header-title">
+                    <i class="fas fa-comments"></i> Chat & Reaksi
+                </div>
+                <i class="fas fa-chevron-up chat-toggle-icon" id="chat-toggle-icon"></i>
             </div>
-            <div class="emoji-picker">
-                <button class="emoji-btn" data-emoji="😀">😀</button>
-                <button class="emoji-btn" data-emoji="😂">😂</button>
-                <button class="emoji-btn" data-emoji="😎">😎</button>
-                <button class="emoji-btn" data-emoji="🔥">🔥</button>
-                <button class="emoji-btn" data-emoji="👍">👍</button>
-                <button class="emoji-btn" data-emoji="❤️">❤️</button>
-                <button class="emoji-btn" data-emoji="😢">😢</button>
-                <button class="emoji-btn" data-emoji="😡">😡</button>
-                <button class="emoji-btn" data-emoji="🎉">🎉</button>
-                <button class="emoji-btn" data-emoji="💪">💪</button>
-            </div>
-            <div class="messages-container" id="messages-container">
-                <p style="text-align: center; color: #666; font-size: 0.9em;">Belum ada pesan</p>
-            </div>
-            <div class="chat-input-container">
-                <input type="text" id="chat-input" placeholder="Ketik pesan..." maxlength="100">
-                <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+
+            <div class="chat-content-wrapper" id="chat-content-wrapper">
+                <div class="emoji-picker">
+                    <button class="emoji-btn" data-emoji="😀">😀</button>
+                    <button class="emoji-btn" data-emoji="😂">😂</button>
+                    <button class="emoji-btn" data-emoji="😎">😎</button>
+                    <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                    <button class="emoji-btn" data-emoji="👍">👍</button>
+                    <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                    <button class="emoji-btn" data-emoji="😢">😢</button>
+                    <button class="emoji-btn" data-emoji="😡">😡</button>
+                    <button class="emoji-btn" data-emoji="🎉">🎉</button>
+                    <button class="emoji-btn" data-emoji="💪">💪</button>
+                </div>
+                <div class="messages-container" id="messages-container">
+                    <p style="text-align: center; color: #666; font-size: 0.9em;">Belum ada pesan</p>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ketik pesan..." maxlength="100">
+                    <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
     </div>
