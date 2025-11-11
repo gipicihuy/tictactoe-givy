@@ -22,6 +22,7 @@ let nickname = '';
 let playerID = null;
 let roomRef = null;
 let messagesRef = null;
+let unreadCount = 0; // Global Counter untuk pesan baru
 
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
@@ -43,8 +44,9 @@ const messagesContainer = document.getElementById('messages-container');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const emojiButtons = document.querySelectorAll('.emoji-btn');
-// DOM Elements BARU untuk Toggle Chat
+// DOM Elements untuk Toggle Chat
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const unreadCountSpan = document.getElementById('unread-count');
 
 
 // Utility Functions
@@ -198,6 +200,11 @@ function displayMessage(messageData, messageKey) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+function updateUnreadCountDisplay() {
+    // Tampilkan (Jumlah)
+    unreadCountSpan.textContent = `(${unreadCount})`;
+}
+
 function setupChatListener() {
     if (!messagesRef) return;
 
@@ -211,6 +218,19 @@ function setupChatListener() {
         }
 
         displayMessage(messageData, messageKey);
+        
+        // --- LOGIKA HITUNGAN PESAN BARU ---
+        // Periksa apakah layar adalah mobile dan chat sedang tersembunyi
+        if (window.innerWidth <= 768 && chatSection.classList.contains('minimized')) {
+            // Hanya hitung jika di mobile DAN chat sedang tersembunyi
+            unreadCount++;
+            updateUnreadCountDisplay();
+        } else if (window.innerWidth <= 768 && !chatSection.classList.contains('minimized')) {
+            // Jika di mobile TAPI chat terbuka, pastikan count tetap 0 (langsung dibaca)
+            unreadCount = 0;
+            updateUnreadCountDisplay();
+        }
+        // Di desktop, hitungan diabaikan karena chat selalu terlihat
     });
 }
 
@@ -296,7 +316,7 @@ function joinRoom(id) {
     });
 }
 
-// Logic BARU untuk Toggle Chat
+// Logic untuk Toggle Chat
 function toggleChat() {
     if (window.innerWidth > 768) {
         // Jangan lakukan apa-apa di desktop
@@ -308,7 +328,7 @@ function toggleChat() {
     const isCurrentlyMinimized = chatSection.classList.contains('minimized');
     const newMinimizedState = !isCurrentlyMinimized;
     
-    // Header height (46px)
+    // Header height (46px dari CSS)
     const minimizedPadding = '46px'; 
     // Full chat height (ambil dari CSS media query)
     const openPadding = window.innerWidth <= 500 ? '320px' : '350px';
@@ -319,6 +339,10 @@ function toggleChat() {
     } else {
         chatSection.classList.remove('minimized');
         document.body.style.paddingBottom = openPadding;
+        
+        // --- LOGIKA RESET HITUNGAN KETIKA CHAT DIBUKA ---
+        unreadCount = 0;
+        updateUnreadCountDisplay();
     }
 }
 
@@ -338,6 +362,8 @@ function joinRoomSuccess() {
     if (window.innerWidth <= 768) {
         chatSection.classList.add('minimized'); 
         document.body.style.paddingBottom = '46px'; // Start with minimized padding
+        unreadCount = 0; // Pastikan start dari 0
+        updateUnreadCountDisplay(); // Tampilkan (0)
     }
 }
 
@@ -550,7 +576,7 @@ copyLinkBtn.addEventListener('click', () => {
     setTimeout(() => copyLinkBtn.innerHTML = '<i class="fas fa-copy"></i> Salin', 2000);
 });
 
-// Event Listener BARU untuk Toggle Chat
+// Event Listener untuk Toggle Chat
 if (chatToggleBtn) {
     chatToggleBtn.addEventListener('click', toggleChat);
 }
