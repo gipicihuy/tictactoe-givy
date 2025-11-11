@@ -13,7 +13,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: center; /* Default untuk desktop/setup */
 }
 
 h1 {
@@ -90,7 +90,7 @@ button:active {
     justify-content: center;
 }
 
-/* Game Container untuk Layout Side by Side */
+/* Game Container untuk Layout Side by Side (Desktop) */
 .game-container {
     display: flex;
     gap: 20px;
@@ -276,7 +276,7 @@ button:active {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
 }
 
-/* CHAT & EMOJI SECTION */
+/* CHAT & EMOJI SECTION (Desktop Default) */
 .chat-section {
     width: 100%;
     max-width: 350px;
@@ -288,6 +288,8 @@ button:active {
     flex-direction: column;
     min-height: 450px;
     max-height: 600px;
+    /* Tambahkan flex: none agar tidak memanjang di desktop */
+    flex: none; 
 }
 
 .chat-header {
@@ -446,14 +448,46 @@ button:active {
 
 /* Responsive */
 @media (max-width: 768px) {
+    /* Mengubah Body agar bisa mengakomodasi fixed footer dan membatasi tinggi konten */
+    body {
+        justify-content: flex-start; /* Konten mulai dari atas */
+        padding-bottom: 330px; /* Tambahkan padding agar chat section tidak menutupi konten utama */
+    }
+
+    /* Mengubah Game Container menjadi kolom (Sudah ada) */
     .game-container {
         flex-direction: column;
         align-items: center;
+        width: 100%;
     }
 
+    /* Menata Chat Section agar FIXED di bagian bawah */
     .chat-section {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
         max-width: 100%;
-        min-height: 350px;
+        height: 330px; /* Tinggi yang cukup */
+        border-radius: 12px 12px 0 0;
+        border: none;
+        border-top: 2px solid #444; /* Beri garis pemisah */
+        margin: 0;
+        /* Padding horizontal tetap 15px */
+        padding-left: 15px;
+        padding-right: 15px;
+        /* Hapus border vertikal di sini karena sudah fixed width 100% */
+        border-left: none;
+        border-right: none;
+    }
+
+    .messages-container {
+        flex: 1; 
+        height: 100px; 
+        overflow-y: auto;
+        /* Penting: Set tinggi agar flex berfungsi */
+        max-height: 150px; 
     }
 }
 
@@ -492,8 +526,12 @@ button:active {
         font-size: 1.5em;
         padding: 3px 8px;
     }
-
+    
+    /* Sesuaikan tinggi chat section untuk layar yang lebih kecil */
     .chat-section {
-        min-height: 300px;
+        height: 300px;
+    }
+    body {
+        padding-bottom: 300px;
     }
 }
