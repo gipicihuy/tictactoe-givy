@@ -13,7 +13,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Default untuk desktop/setup */
+    justify-content: center;
 }
 
 h1 {
@@ -276,7 +276,7 @@ button:active {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
 }
 
-/* CHAT & EMOJI SECTION (Desktop Default) */
+/* CHAT & EMOJI SECTION (Desktop Default: Side-by-Side) */
 .chat-section {
     width: 100%;
     max-width: 350px;
@@ -288,11 +288,25 @@ button:active {
     flex-direction: column;
     min-height: 450px;
     max-height: 600px;
-    /* Tambahkan flex: none agar tidak memanjang di desktop */
     flex: none; 
 }
 
-.chat-header {
+/* Sembunyikan Header Toggle di Desktop */
+.chat-toggle-header {
+    display: none; 
+}
+
+/* Sembunyikan wrapper konten di desktop agar padding section bekerja */
+.chat-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* Hilangkan padding yang ditambahkan di mobile */
+    padding: 0; 
+}
+
+/* Tetapkan kembali style chat header lama untuk desktop */
+.chat-header-title {
     font-size: 1.1em;
     font-weight: 600;
     color: #FFA726;
@@ -300,6 +314,7 @@ button:active {
     padding-bottom: 10px;
     border-bottom: 2px solid #444;
 }
+
 
 .emoji-picker {
     display: flex;
@@ -446,12 +461,14 @@ button:active {
     text-align: center;
 }
 
-/* Responsive */
+/* ========================================================= */
+/* RESPONSIVE & TOGGLE LOGIC (Untuk Mobile)                  */
+/* ========================================================= */
 @media (max-width: 768px) {
     /* Mengubah Body agar bisa mengakomodasi fixed footer dan membatasi tinggi konten */
     body {
         justify-content: flex-start; /* Konten mulai dari atas */
-        padding-bottom: 330px; /* Tambahkan padding agar chat section tidak menutupi konten utama */
+        padding-bottom: 350px; /* Default padding untuk chat TERBUKA */
     }
 
     /* Mengubah Game Container menjadi kolom (Sudah ada) */
@@ -469,25 +486,54 @@ button:active {
         right: 0;
         z-index: 100;
         max-width: 100%;
-        height: 330px; /* Tinggi yang cukup */
+        height: 350px; /* Ketinggian saat terbuka penuh */
         border-radius: 12px 12px 0 0;
         border: none;
-        border-top: 2px solid #444; /* Beri garis pemisah */
+        border-top: 2px solid #444;
         margin: 0;
-        /* Padding horizontal tetap 15px */
-        padding-left: 15px;
-        padding-right: 15px;
-        /* Hapus border vertikal di sini karena sudah fixed width 100% */
-        border-left: none;
-        border-right: none;
+        padding: 0;
+        transition: transform 0.3s ease-out; 
+        transform: translateY(0); /* POSISI TERBUKA (default) */
     }
 
-    .messages-container {
-        flex: 1; 
-        height: 100px; 
-        overflow-y: auto;
-        /* Penting: Set tinggi agar flex berfungsi */
-        max-height: 150px; 
+    /* Tampilkan Header Toggle di Mobile */
+    .chat-toggle-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #FFA726;
+        background-color: #252525;
+        border-radius: 12px 12px 0 0;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 2px solid #444;
+        min-height: 46px; /* Tinggi Header yang dihitung (digunakan di JS/minimized) */
+    }
+    
+    .chat-toggle-icon {
+        transition: transform 0.3s ease;
+        transform: rotate(0deg); /* Icon ke atas saat TERBUKA */
+    }
+    
+    /* Konten Chat Body */
+    .chat-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 46px); /* Tinggi konten = Total Tinggi - Tinggi Header */
+        padding: 10px 15px 15px 15px; 
+    }
+    
+    /* === MINIMIZED STATE CLASS === */
+    .chat-section.minimized {
+        /* Geser panel ke bawah sehingga hanya header yang terlihat */
+        transform: translateY(calc(100% - 46px)); 
+    }
+
+    .chat-section.minimized .chat-toggle-icon {
+        transform: rotate(180deg); /* Icon menunjuk ke bawah */
     }
 }
 
@@ -529,9 +575,13 @@ button:active {
     
     /* Sesuaikan tinggi chat section untuk layar yang lebih kecil */
     .chat-section {
-        height: 300px;
+        height: 320px; /* Tinggi saat terbuka di layar sangat kecil */
     }
     body {
-        padding-bottom: 300px;
+        padding-bottom: 320px;
+    }
+    
+    .chat-section.minimized {
+        transform: translateY(calc(100% - 46px)); /* Tetap menggunakan tinggi header yang sama */
     }
 }
