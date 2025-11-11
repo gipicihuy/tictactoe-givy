@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css"> <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <link href="https://fonts.cdnfonts.com/css/ubuntu-mono" rel="stylesheet">
 </head>
 <body>
     <h1><i class="fas fa-gamepad"></i> Givy TicTacToe</h1>
@@ -46,18 +45,24 @@
         
         <div class="chat-section hidden" id="chat-section">
             <div class="chat-toggle-header" id="chat-toggle-btn">
-                <div class="chat-header-title">
-                    <i class="fas fa-comments"></i> Chat
+                <div class="chat-header-title" id="chat-header-title">
+                    <i class="fas fa-comments"></i> Chat <span id="unread-count">(0)</span>
                 </div>
                 <i class="fas fa-chevron-up chat-toggle-icon" id="chat-toggle-icon"></i>
             </div>
 
             <div class="chat-content-wrapper" id="chat-content-wrapper">
                 <div class="emoji-picker">
-                    <button class="emoji-btn" data-emoji="🗿">🗿</button>
-                    <button class="emoji-btn" data-emoji="😈">😈</button>
-                    <button class="emoji-btn" data-emoji="😹">😹</button>
+                    <button class="emoji-btn" data-emoji="😀">😀</button>
+                    <button class="emoji-btn" data-emoji="😂">😂</button>
+                    <button class="emoji-btn" data-emoji="😎">😎</button>
                     <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                    <button class="emoji-btn" data-emoji="👍">👍</button>
+                    <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                    <button class="emoji-btn" data-emoji="😢">😢</button>
+                    <button class="emoji-btn" data-emoji="😡">😡</button>
+                    <button class="emoji-btn" data-emoji="🎉">🎉</button>
+                    <button class="emoji-btn" data-emoji="💪">💪</button>
                 </div>
                 <div class="messages-container" id="messages-container">
                     <p style="text-align: center; color: #666; font-size: 0.9em;">Belum ada pesan</p>
