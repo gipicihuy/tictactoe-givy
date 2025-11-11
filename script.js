@@ -43,6 +43,9 @@ const messagesContainer = document.getElementById('messages-container');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const emojiButtons = document.querySelectorAll('.emoji-btn');
+// DOM Elements BARU untuk Toggle Chat
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+
 
 // Utility Functions
 function sanitizeInput(str) {
@@ -293,6 +296,32 @@ function joinRoom(id) {
     });
 }
 
+// Logic BARU untuk Toggle Chat
+function toggleChat() {
+    if (window.innerWidth > 768) {
+        // Jangan lakukan apa-apa di desktop
+        chatSection.classList.remove('minimized');
+        document.body.style.paddingBottom = '10px';
+        return;
+    }
+
+    const isCurrentlyMinimized = chatSection.classList.contains('minimized');
+    const newMinimizedState = !isCurrentlyMinimized;
+    
+    // Header height (46px)
+    const minimizedPadding = '46px'; 
+    // Full chat height (ambil dari CSS media query)
+    const openPadding = window.innerWidth <= 500 ? '320px' : '350px';
+
+    if (newMinimizedState) {
+        chatSection.classList.add('minimized');
+        document.body.style.paddingBottom = minimizedPadding; 
+    } else {
+        chatSection.classList.remove('minimized');
+        document.body.style.paddingBottom = openPadding;
+    }
+}
+
 function joinRoomSuccess() {
     setupScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
@@ -304,6 +333,12 @@ function joinRoomSuccess() {
 
     roomRef.on('value', handleRoomUpdate);
     setupChatListener();
+    
+    // Set chat ke minimized secara default di mobile
+    if (window.innerWidth <= 768) {
+        chatSection.classList.add('minimized'); 
+        document.body.style.paddingBottom = '46px'; // Start with minimized padding
+    }
 }
 
 // Game Logic
@@ -514,6 +549,11 @@ copyLinkBtn.addEventListener('click', () => {
     copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
     setTimeout(() => copyLinkBtn.innerHTML = '<i class="fas fa-copy"></i> Salin', 2000);
 });
+
+// Event Listener BARU untuk Toggle Chat
+if (chatToggleBtn) {
+    chatToggleBtn.addEventListener('click', toggleChat);
+}
 
 // Chat Event Listeners
 sendChatBtn.addEventListener('click', () => {
