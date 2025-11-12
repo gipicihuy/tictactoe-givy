@@ -25,6 +25,10 @@ let messagesRef = null;
 let totalMessageCount = 0; 
 let startingPlayer = 'p1'; // Baru: Melacak siapa yang memulai putaran saat ini
 
+// Sound Effect
+const clickSound = new Audio('https://a.top4top.io/m_3603gdp4k0.mp3');
+clickSound.volume = 0.5; // Set volume 50% (bisa disesuaikan 0.0 - 1.0)
+
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -451,6 +455,10 @@ function handleCellClick(event) {
         if (status !== 'playing' || turn !== playerID || board[index] !== "") {
             return;
         }
+
+        // Play click sound
+        clickSound.currentTime = 0; // Reset audio ke awal
+        clickSound.play().catch(err => console.log('Audio play failed:', err));
 
         board[index] = myMarker;
         const winningCombo = checkWin(board);
