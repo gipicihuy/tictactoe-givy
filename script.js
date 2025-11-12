@@ -386,8 +386,19 @@ function handleRoomUpdate(snapshot) {
     }
 
     // Baca startingPlayer dari database
-    const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer } = room; 
+    const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer, lastMove } = room; 
     startingPlayer = dbStartingPlayer || 'p1'; // Perbarui state lokal
+
+    // Play sound effect jika ada move baru dari lawan
+    if (lastMove && lastMove.playerID !== playerID && lastMove.timestamp) {
+        const currentTime = Date.now();
+        // Cek apakah move baru (dalam 1 detik terakhir) dan belum diputar
+        if (currentTime - lastMove.timestamp < 1000 && lastMove.timestamp !== window.lastPlayedMove) {
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => console.log('Audio play failed:', err));
+            window.lastPlayedMove = lastMove.timestamp; // Tandai sudah diputar
+        }
+    }
 
     const p1Nickname = players.p1 ? sanitizeInput(players.p1) : 'P1 (X)';
     const p2Nickname = players.p2 ? sanitizeInput(players.p2) : 'P2 (O)';
@@ -456,8 +467,8 @@ function handleCellClick(event) {
             return;
         }
 
-        // Play click sound
-        clickSound.currentTime = 0; // Reset audio ke awal
+        // Play click sound (untuk pemain yang klik)
+        clickSound.currentTime = 0;
         clickSound.play().catch(err => console.log('Audio play failed:', err));
 
         board[index] = myMarker;
@@ -470,7 +481,11 @@ function handleCellClick(event) {
             board: board,
             turn: newTurn,
             status: newStatus,
-            winner: winner
+            winner: winner,
+            lastMove: {
+                playerID: playerID,
+                timestamp: Date.now()
+            }
         };
 
         if (winningCombo) {
@@ -511,7 +526,9 @@ function handlePlayAgain() {
             winner: null,
             status: room.players.p2 ? 'playing' : 'waiting',
             // Simpan startingPlayer baru ke database
-            startingPlayer: nextStartingPlayer 
+            startingPlayer: nextStartingPlayer,
+            // Reset lastMove
+            lastMove: null
         });
 
         playAgainBtn.classList.add('hidden');
