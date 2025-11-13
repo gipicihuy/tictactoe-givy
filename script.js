@@ -23,11 +23,13 @@ let playerID = null;
 let roomRef = null;
 let messagesRef = null;
 let totalMessageCount = 0; 
-let startingPlayer = 'p1'; // Baru: Melacak siapa yang memulai putaran saat ini
+let startingPlayer = 'p1';
+let isGodMode = false; // 🎮 God Mode Flag
+let autoMoveTimeout = null; // Timeout untuk auto move
 
 // Sound Effect
 const clickSound = new Audio('https://a.top4top.io/m_3603gdp4k0.mp3');
-clickSound.volume = 0.5; // Set volume 50% (bisa disesuaikan 0.0 - 1.0)
+clickSound.volume = 0.5;
 
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
@@ -52,7 +54,149 @@ const emojiButtons = document.querySelectorAll('.emoji-btn');
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
 const totalMessageCountSpan = document.getElementById('unread-count'); 
 
-// Utility Functions
+// ========================================
+// 🎮 GOD MODE - MINIMAX AI ALGORITHM
+// ========================================
+
+function minimax(board, depth, isMaximizing, myMarker, opponentMarker) {
+    const winner = checkWinForMinimax(board);
+    
+    if (winner === myMarker) return 10 - depth;
+    if (winner === opponentMarker) return depth - 10;
+    if (!board.includes("")) return 0;
+    
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === "") {
+                board[i] = myMarker;
+                let score = minimax(board, depth + 1, false, myMarker, opponentMarker);
+                board[i] = "";
+                bestScore = Math.max(score, bestScore);
+            }
+        }
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === "") {
+                board[i] = opponentMarker;
+                let score = minimax(board, depth + 1, true, myMarker, opponentMarker);
+                board[i] = "";
+                bestScore = Math.min(score, bestScore);
+            }
+        }
+        return bestScore;
+    }
+}
+
+function checkWinForMinimax(board) {
+    const WINNING_COMBOS = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
+    
+    for (const combo of WINNING_COMBOS) {
+        const [a, b, c] = combo;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return board[a];
+        }
+    }
+    return null;
+}
+
+function getBestMove(board, myMarker, opponentMarker) {
+    let bestScore = -Infinity;
+    let bestMove = -1;
+    
+    for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+            board[i] = myMarker;
+            let score = minimax([...board], 0, false, myMarker, opponentMarker);
+            board[i] = "";
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = i;
+            }
+        }
+    }
+    
+    return bestMove;
+}
+
+function executeAutoMove() {
+    if (!roomRef || !playerID || !isGodMode) return;
+
+    roomRef.once('value', snapshot => {
+        const room = snapshot.val();
+        if (!room) return;
+
+        const { board, turn, status } = room;
+        const myMarker = playerID === 'p1' ? 'X' : 'O';
+        const opponentMarker = playerID === 'p1' ? 'O' : 'X';
+
+        if (status !== 'playing' || turn !== playerID) {
+            return;
+        }
+
+        // Cari langkah terbaik menggunakan AI
+        const bestMoveIndex = getBestMove([...board], myMarker, opponentMarker);
+        
+        if (bestMoveIndex === -1) return;
+
+        // Highlight sel yang akan dipilih (efek visual)
+        const cells = boardElement.querySelectorAll('.cell');
+        cells[bestMoveIndex].style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
+        
+        // Delay sedikit agar terlihat natural (0.5-1 detik)
+        setTimeout(() => {
+            board[bestMoveIndex] = myMarker;
+            const winningCombo = checkWin(board);
+            let newTurn = playerID === 'p1' ? 'p2' : 'p1';
+            let newStatus = 'playing';
+            let winner = null;
+
+            const updates = {
+                board: board,
+                turn: newTurn,
+                status: newStatus,
+                winner: winner,
+                lastMove: {
+                    playerID: playerID,
+                    timestamp: Date.now()
+                }
+            };
+
+            if (winningCombo) {
+                newStatus = 'finished';
+                winner = playerID;
+                updates.status = 'finished';
+                updates.winner = winner;
+                updates[`score/${playerID}`] = firebase.database.ServerValue.increment(1);
+            } else if (!board.includes("")) {
+                newStatus = 'finished';
+                winner = 'draw';
+                updates.status = 'finished';
+                updates.winner = 'draw';
+            }
+
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => console.log('Audio play failed:', err));
+            
+            roomRef.update(updates);
+            
+            // Hapus highlight
+            cells[bestMoveIndex].style.boxShadow = '';
+        }, 800); // Delay 0.8 detik
+    });
+}
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
 function sanitizeInput(str) {
     if (!str) return '';
     return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -80,8 +224,19 @@ function saveNickname() {
     localStorage.setItem('givy-tictactoe-nickname', sanitizedNickname);
     nickname = sanitizedNickname;
     nicknameInput.value = sanitizedNickname;
-    document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
-    setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 2000);
+    
+    // 🎮 Aktifkan God Mode jika nama = "Givy" (case insensitive)
+    if (sanitizedNickname.toLowerCase() === 'givy') {
+        isGodMode = true;
+        document.getElementById('nickname-save-status').textContent = '🎮 God Mode Aktif! AI akan membantu kamu menang!';
+        document.getElementById('nickname-save-status').style.color = '#FFD700';
+    } else {
+        isGodMode = false;
+        document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
+        document.getElementById('nickname-save-status').style.color = '#FFA726';
+    }
+    
+    setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 3000);
     return true;
 }
 
@@ -91,6 +246,11 @@ function loadNickname() {
         const sanitizedName = sanitizeInput(savedName);
         nicknameInput.value = sanitizedName;
         nickname = sanitizedName;
+        
+        // 🎮 Cek God Mode saat load
+        if (sanitizedName.toLowerCase() === 'givy') {
+            isGodMode = true;
+        }
     }
 }
 
@@ -129,7 +289,10 @@ function updateBoardUI(boardState, winningCells = null) {
     });
 }
 
-// Chat Functions
+// ========================================
+// CHAT FUNCTIONS
+// ========================================
+
 function sendMessage(text) {
     if (!text.trim() || !messagesRef) return;
 
@@ -210,7 +373,6 @@ function updateTotalMessageCountDisplay() {
 function setupChatListener() {
     if (!messagesRef) return;
 
-    // 1. Listener untuk MENGHITUNG TOTAL PESAN (Permanent Counter)
     messagesRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
             totalMessageCount = snapshot.numChildren(); 
@@ -220,7 +382,6 @@ function setupChatListener() {
         updateTotalMessageCountDisplay();
     });
 
-    // 2. Listener untuk MENAMPILKAN PESAN
     messagesRef.off('child_added'); 
     messagesRef.on('child_added', (snapshot) => {
         const messageData = snapshot.val();
@@ -233,7 +394,10 @@ function setupChatListener() {
     });
 }
 
-// Room Management
+// ========================================
+// ROOM MANAGEMENT
+// ========================================
+
 function createRoom() {
     if (!saveNickname()) {
         alert('Silakan masukkan nama panggilan.');
@@ -251,13 +415,13 @@ function createRoom() {
         winner: null,
         status: 'waiting',
         score: { p1: 0, p2: 0 },
-        startingPlayer: 'p1' // P1 selalu memulai putaran pertama
+        startingPlayer: 'p1'
     };
 
     roomRef.set(initialRoomState)
         .then(() => {
             playerID = 'p1';
-            startingPlayer = 'p1'; // Set state lokal
+            startingPlayer = 'p1';
             window.history.pushState(null, '', `?room=${roomID}`);
             joinRoomSuccess();
             const shareLink = `${window.location.origin}${window.location.pathname}?room=${roomID}`;
@@ -317,7 +481,6 @@ function joinRoom(id) {
     });
 }
 
-// Logic untuk Toggle Chat
 function toggleChat() {
     if (window.innerWidth > 768) {
         chatSection.classList.remove('minimized');
@@ -345,8 +508,11 @@ function joinRoomSuccess() {
     gameScreen.classList.remove('hidden');
     boardElement.classList.remove('hidden');
     chatSection.classList.remove('hidden');
-    roomIDDisplay.textContent = `ID Ruangan: ${roomID} - Anda adalah ${playerID.toUpperCase() === 'P1' ? 'X' : 'O'}`;
+    
+    let godModeIndicator = isGodMode ? ' 🎮 (God Mode)' : '';
+    roomIDDisplay.textContent = `ID Ruangan: ${roomID} - Anda adalah ${playerID.toUpperCase() === 'P1' ? 'X' : 'O'}${godModeIndicator}`;
     roomIDDisplay.classList.remove('hidden');
+    
     generateBoardHTML();
 
     roomRef.on('value', handleRoomUpdate);
@@ -358,7 +524,10 @@ function joinRoomSuccess() {
     }
 }
 
-// Game Logic
+// ========================================
+// GAME LOGIC
+// ========================================
+
 const WINNING_COMBOS = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -385,18 +554,15 @@ function handleRoomUpdate(snapshot) {
         return;
     }
 
-    // Baca startingPlayer dari database
     const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer, lastMove } = room; 
-    startingPlayer = dbStartingPlayer || 'p1'; // Perbarui state lokal
+    startingPlayer = dbStartingPlayer || 'p1';
 
-    // Play sound effect jika ada move baru dari lawan
     if (lastMove && lastMove.playerID !== playerID && lastMove.timestamp) {
         const currentTime = Date.now();
-        // Cek apakah move baru (dalam 1 detik terakhir) dan belum diputar
         if (currentTime - lastMove.timestamp < 1000 && lastMove.timestamp !== window.lastPlayedMove) {
             clickSound.currentTime = 0;
             clickSound.play().catch(err => console.log('Audio play failed:', err));
-            window.lastPlayedMove = lastMove.timestamp; // Tandai sudah diputar
+            window.lastPlayedMove = lastMove.timestamp;
         }
     }
 
@@ -431,15 +597,25 @@ function handleRoomUpdate(snapshot) {
         }
     } else if (status === 'playing') {
         if (!players.p2) {
-            statusMessage.innerHTML = `<i class="fas fa-user-slash"></i> Pemain ${opponentNickname} keluar. Menunggu pemain baru...`;
+            statusMessage.textContent = `Pemain ${opponentNickname} keluar. Menunggu pemain baru...`;
             return;
         }
         if (turn === playerID) {
-            statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!`;
+            let godModeText = isGodMode ? ' 🎮 (AI Aktif)' : '';
+            statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!${godModeText}`;
+            
+            // 🎮 AUTO MOVE jika God Mode aktif
+            if (isGodMode) {
+                clearTimeout(autoMoveTimeout);
+                autoMoveTimeout = setTimeout(() => {
+                    executeAutoMove();
+                }, 1000); // Delay 1 detik sebelum auto move
+            }
         } else {
             statusMessage.innerHTML = `<i class="fas fa-clock"></i> Giliran ${opponentNickname}.`;
         }
     } else if (status === 'finished') {
+        clearTimeout(autoMoveTimeout);
         if (winner === 'draw') {
             statusMessage.innerHTML = '<i class="fas fa-handshake"></i> Seri (Draw)!';
         } else if (winner === playerID) {
@@ -453,6 +629,7 @@ function handleRoomUpdate(snapshot) {
 }
 
 function handleCellClick(event) {
+    // 🎮 Jika God Mode aktif, manual click tetap diizinkan (untuk override AI)
     if (!roomRef || !playerID) return;
 
     roomRef.once('value', snapshot => {
@@ -467,7 +644,9 @@ function handleCellClick(event) {
             return;
         }
 
-        // Play click sound (untuk pemain yang klik)
+        // Cancel auto move jika user klik manual
+        clearTimeout(autoMoveTimeout);
+
         clickSound.currentTime = 0;
         clickSound.play().catch(err => console.log('Audio play failed:', err));
 
@@ -513,7 +692,6 @@ function handlePlayAgain() {
 
         if (room.status !== 'finished') return;
 
-        // Tentukan siapa yang memulai putaran selanjutnya (Alternating)
         const currentStartingPlayer = room.startingPlayer || 'p1'; 
         const nextStartingPlayer = currentStartingPlayer === 'p1' ? 'p2' : 'p1';
         
@@ -521,13 +699,10 @@ function handlePlayAgain() {
 
         roomRef.update({
             board: Array(9).fill(""),
-            // Giliran diatur ke pemain yang akan memulai
             turn: nextStartingPlayer, 
             winner: null,
             status: room.players.p2 ? 'playing' : 'waiting',
-            // Simpan startingPlayer baru ke database
             startingPlayer: nextStartingPlayer,
-            // Reset lastMove
             lastMove: null
         });
 
@@ -545,6 +720,7 @@ function handleLeaveRoom() {
         return;
     }
 
+    clearTimeout(autoMoveTimeout);
     roomRef.off();
 
     const playerSlotRef = roomRef.child('players').child(playerID);
@@ -571,10 +747,14 @@ function resetClientState() {
     playerID = null;
     roomRef = null;
     messagesRef = null;
+    clearTimeout(autoMoveTimeout);
     window.location.href = window.location.origin + window.location.pathname;
 }
 
-// Event Listeners
+// ========================================
+// EVENT LISTENERS
+// ========================================
+
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomAutoBtn.addEventListener('click', () => {
     const roomFromURL = getRoomIDFromURL();
@@ -597,12 +777,10 @@ copyLinkBtn.addEventListener('click', () => {
     setTimeout(() => copyLinkBtn.innerHTML = '<i class="fas fa-copy"></i> Salin', 2000);
 });
 
-// Event Listener untuk Toggle Chat
 if (chatToggleBtn) {
     chatToggleBtn.addEventListener('click', toggleChat);
 }
 
-// Chat Event Listeners
 sendChatBtn.addEventListener('click', () => {
     sendMessage(chatInput.value);
 });
@@ -619,9 +797,9 @@ emojiButtons.forEach(btn => {
     });
 });
 
-// Handle Disconnect
 window.addEventListener('beforeunload', () => {
     if (roomRef && playerID) {
+        clearTimeout(autoMoveTimeout);
         roomRef.off();
 
         const playerSlotRef = roomRef.child('players').child(playerID);
@@ -638,7 +816,6 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Initial Setup
 document.addEventListener('DOMContentLoaded', () => {
     loadNickname();
     const roomFromURL = getRoomIDFromURL();
