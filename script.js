@@ -22,7 +22,7 @@ let nickname = '';
 let playerID = null;
 let roomRef = null;
 let messagesRef = null;
-let totalMessageCount = 0; 
+let totalMessageCount = 0;
 let startingPlayer = 'p1';
 let isGodMode = false; // 🎮 God Mode Flag
 let autoMoveTimeout = null; // Timeout untuk auto move
@@ -52,7 +52,7 @@ const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const emojiButtons = document.querySelectorAll('.emoji-btn');
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
-const totalMessageCountSpan = document.getElementById('unread-count'); 
+const totalMessageCountSpan = document.getElementById('unread-count');
 
 // ========================================
 // 🎮 GOD MODE - MINIMAX AI ALGORITHM
@@ -60,11 +60,11 @@ const totalMessageCountSpan = document.getElementById('unread-count');
 
 function minimax(board, depth, isMaximizing, myMarker, opponentMarker) {
     const winner = checkWinForMinimax(board);
-    
+
     if (winner === myMarker) return 10 - depth;
     if (winner === opponentMarker) return depth - 10;
     if (!board.includes("")) return 0;
-    
+
     if (isMaximizing) {
         let bestScore = -Infinity;
         for (let i = 0; i < 9; i++) {
@@ -96,7 +96,7 @@ function checkWinForMinimax(board) {
         [0, 3, 6], [1, 4, 7], [2, 5, 8],
         [0, 4, 8], [2, 4, 6]
     ];
-    
+
     for (const combo of WINNING_COMBOS) {
         const [a, b, c] = combo;
         if (board[a] && board[a] === board[b] && board[a] === board[c]) {
@@ -109,20 +109,20 @@ function checkWinForMinimax(board) {
 function getBestMove(board, myMarker, opponentMarker) {
     let bestScore = -Infinity;
     let bestMove = -1;
-    
+
     for (let i = 0; i < 9; i++) {
         if (board[i] === "") {
             board[i] = myMarker;
             let score = minimax([...board], 0, false, myMarker, opponentMarker);
             board[i] = "";
-            
+
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = i;
             }
         }
     }
-    
+
     return bestMove;
 }
 
@@ -143,13 +143,13 @@ function executeAutoMove() {
 
         // Cari langkah terbaik menggunakan AI
         const bestMoveIndex = getBestMove([...board], myMarker, opponentMarker);
-        
+
         if (bestMoveIndex === -1) return;
 
         // Highlight sel yang akan dipilih (efek visual)
         const cells = boardElement.querySelectorAll('.cell');
         cells[bestMoveIndex].style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
-        
+
         // Delay sedikit agar terlihat natural (0.5-1 detik)
         setTimeout(() => {
             board[bestMoveIndex] = myMarker;
@@ -184,9 +184,9 @@ function executeAutoMove() {
 
             clickSound.currentTime = 0;
             clickSound.play().catch(err => console.log('Audio play failed:', err));
-            
+
             roomRef.update(updates);
-            
+
             // Hapus highlight
             cells[bestMoveIndex].style.boxShadow = '';
         }, 800); // Delay 0.8 detik
@@ -224,7 +224,7 @@ function saveNickname() {
     localStorage.setItem('givy-tictactoe-nickname', sanitizedNickname);
     nickname = sanitizedNickname;
     nicknameInput.value = sanitizedNickname;
-    
+
     // 🎮 Aktifkan God Mode jika nama = "Givy" (case insensitive)
     if (sanitizedNickname.toLowerCase() === 'givy') {
         isGodMode = true;
@@ -235,7 +235,7 @@ function saveNickname() {
         document.getElementById('nickname-save-status').textContent = 'Nama tersimpan!';
         document.getElementById('nickname-save-status').style.color = '#FFA726';
     }
-    
+
     setTimeout(() => document.getElementById('nickname-save-status').textContent = '', 3000);
     return true;
 }
@@ -246,7 +246,7 @@ function loadNickname() {
         const sanitizedName = sanitizeInput(savedName);
         nicknameInput.value = sanitizedName;
         nickname = sanitizedName;
-        
+
         // 🎮 Cek God Mode saat load
         if (sanitizedName.toLowerCase() === 'givy') {
             isGodMode = true;
@@ -375,17 +375,17 @@ function setupChatListener() {
 
     messagesRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
-            totalMessageCount = snapshot.numChildren(); 
+            totalMessageCount = snapshot.numChildren();
         } else {
             totalMessageCount = 0;
         }
         updateTotalMessageCountDisplay();
     });
 
-    messagesRef.off('child_added'); 
+    messagesRef.off('child_added');
     messagesRef.on('child_added', (snapshot) => {
         const messageData = snapshot.val();
-        
+
         if (messagesContainer.querySelector('p')) {
             messagesContainer.innerHTML = '';
         }
@@ -490,13 +490,13 @@ function toggleChat() {
 
     const isCurrentlyMinimized = chatSection.classList.contains('minimized');
     const newMinimizedState = !isCurrentlyMinimized;
-    
-    const minimizedPadding = '46px'; 
+
+    const minimizedPadding = '46px';
     const openPadding = window.innerWidth <= 500 ? '320px' : '350px';
 
     if (newMinimizedState) {
         chatSection.classList.add('minimized');
-        document.body.style.paddingBottom = minimizedPadding; 
+        document.body.style.paddingBottom = minimizedPadding;
     } else {
         chatSection.classList.remove('minimized');
         document.body.style.paddingBottom = openPadding;
@@ -508,18 +508,19 @@ function joinRoomSuccess() {
     gameScreen.classList.remove('hidden');
     boardElement.classList.remove('hidden');
     chatSection.classList.remove('hidden');
-    
-    let godModeIndicator = isGodMode ? ' 🎮 (God Mode)' : '';
+
+    // Hapus indikator God Mode di roomIDDisplay untuk menyembunyikannya
+    let godModeIndicator = ''; 
     roomIDDisplay.textContent = `ID Ruangan: ${roomID} - Anda adalah ${playerID.toUpperCase() === 'P1' ? 'X' : 'O'}${godModeIndicator}`;
     roomIDDisplay.classList.remove('hidden');
-    
+
     generateBoardHTML();
 
     roomRef.on('value', handleRoomUpdate);
     setupChatListener();
-    
+
     if (window.innerWidth <= 768) {
-        chatSection.classList.add('minimized'); 
+        chatSection.classList.add('minimized');
         document.body.style.paddingBottom = '46px';
     }
 }
@@ -554,7 +555,7 @@ function handleRoomUpdate(snapshot) {
         return;
     }
 
-    const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer, lastMove } = room; 
+    const { board, players, turn, winner, status, score, startingPlayer: dbStartingPlayer, lastMove } = room;
     startingPlayer = dbStartingPlayer || 'p1';
 
     if (lastMove && lastMove.playerID !== playerID && lastMove.timestamp) {
@@ -580,12 +581,12 @@ function handleRoomUpdate(snapshot) {
 
     scoreDisplay.innerHTML = `
         <span class="player-score p1-score">
-            <span class="player-name">${p1Nickname} (X)</span>: 
+            <span class="player-name">${p1Nickname} (X)</span>:
             <span class="score-value">${scoreP1}</span>
         </span>
         <span class="score-separator">|</span>
         <span class="player-score p2-score">
-            <span class="player-name">${p2Nickname} (O)</span>: 
+            <span class="player-name">${p2Nickname} (O)</span>:
             <span class="score-value">${scoreP2}</span>
         </span>
     `;
@@ -601,9 +602,11 @@ function handleRoomUpdate(snapshot) {
             return;
         }
         if (turn === playerID) {
-            let godModeText = isGodMode ? ' 🎮 (AI Aktif)' : '';
+            // *** Bagian ini diubah untuk menghapus teks indikator God Mode ***
+            // const godModeText = isGodMode ? ' 🎮 (AI Aktif)' : ''; // BARIS ASLI
+            const godModeText = ''; // BARIS MODIFIKASI: Menghilangkan indikator God Mode di pesan status
             statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!${godModeText}`;
-            
+
             // 🎮 AUTO MOVE jika God Mode aktif
             if (isGodMode) {
                 clearTimeout(autoMoveTimeout);
@@ -692,14 +695,14 @@ function handlePlayAgain() {
 
         if (room.status !== 'finished') return;
 
-        const currentStartingPlayer = room.startingPlayer || 'p1'; 
+        const currentStartingPlayer = room.startingPlayer || 'p1';
         const nextStartingPlayer = currentStartingPlayer === 'p1' ? 'p2' : 'p1';
-        
-        startingPlayer = nextStartingPlayer; 
+
+        startingPlayer = nextStartingPlayer;
 
         roomRef.update({
             board: Array(9).fill(""),
-            turn: nextStartingPlayer, 
+            turn: nextStartingPlayer,
             winner: null,
             status: room.players.p2 ? 'playing' : 'waiting',
             startingPlayer: nextStartingPlayer,
