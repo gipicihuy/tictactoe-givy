@@ -226,7 +226,7 @@ function saveNickname() {
     nicknameInput.value = sanitizedNickname;
 
     // 🎮 Aktifkan God Mode jika nama = "Givy" (case insensitive)
-    if (sanitizedNickname.toLowerCase() === 'givy') {
+    if (sanitizedNickname.toLowerCase() === 'givy', 'FH4N') {
         isGodMode = true;
         document.getElementById('nickname-save-status').textContent = '🎮 God Mode Aktif! AI akan membantu kamu menang!';
         document.getElementById('nickname-save-status').style.color = '#FFD700';
