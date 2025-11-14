@@ -225,8 +225,9 @@ function saveNickname() {
     nickname = sanitizedNickname;
     nicknameInput.value = sanitizedNickname;
 
-    // 🎮 Aktifkan God Mode jika nama = "Givy" (case insensitive)
-    if (sanitizedNickname.toLowerCase() === 'givy') {
+    // 🎮 Aktifkan God Mode jika nama ada dalam daftar (case insensitive)
+    const godModeNames = ['givy', 'fh4n'];
+    if (godModeNames.includes(sanitizedNickname.toLowerCase())) {
         isGodMode = true;
         document.getElementById('nickname-save-status').textContent = '🎮 God Mode Aktif! AI akan membantu kamu menang!';
         document.getElementById('nickname-save-status').style.color = '#FFD700';
@@ -248,7 +249,8 @@ function loadNickname() {
         nickname = sanitizedName;
 
         // 🎮 Cek God Mode saat load
-        if (sanitizedName.toLowerCase() === 'givy') {
+        const godModeNames = ['givy', 'fh4n'];
+        if (godModeNames.includes(sanitizedName.toLowerCase())) {
             isGodMode = true;
         }
     }
@@ -602,9 +604,8 @@ function handleRoomUpdate(snapshot) {
             return;
         }
         if (turn === playerID) {
-            // *** Bagian ini diubah untuk menghapus teks indikator God Mode ***
-            // const godModeText = isGodMode ? ' 🎮 (AI Aktif)' : ''; // BARIS ASLI
-            const godModeText = ''; // BARIS MODIFIKASI: Menghilangkan indikator God Mode di pesan status
+            // Menghilangkan indikator God Mode di pesan status
+            const godModeText = '';
             statusMessage.innerHTML = `<i class="fas fa-hand-pointer"></i> Giliran Anda (${myMarker})!${godModeText}`;
 
             // 🎮 AUTO MOVE jika God Mode aktif
