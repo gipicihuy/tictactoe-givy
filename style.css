@@ -6,7 +6,8 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d1818 100%);
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a0a0a 50%, #2d1818 100%);
+    background-attachment: fixed;
     color: #f5f5f5;
     min-height: 100vh;
     padding: 10px;
@@ -14,43 +15,100 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(198, 40, 40, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 82, 82, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body > * {
+    position: relative;
+    z-index: 1;
 }
 
 h1 {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     color: #FF5252;
-    font-size: 2.2em;
-    text-shadow: 0 0 15px rgba(255, 82, 82, 0.5);
+    font-size: 2.5em;
+    text-shadow: 
+        0 0 20px rgba(255, 82, 82, 0.6),
+        0 0 40px rgba(255, 82, 82, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.5);
+    letter-spacing: 2px;
+    font-weight: 700;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 
+            0 0 20px rgba(255, 82, 82, 0.6),
+            0 0 40px rgba(255, 82, 82, 0.4),
+            0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+    to {
+        text-shadow: 
+            0 0 30px rgba(255, 82, 82, 0.8),
+            0 0 60px rgba(255, 82, 82, 0.5),
+            0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+}
+
+h1 i {
+    margin-right: 10px;
+    animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
 }
 
 h2 {
     margin: 15px 0;
     color: #f5f5f5;
-    font-size: 1.2em;
+    font-size: 1.3em;
+    font-weight: 600;
 }
 
 p {
     margin-bottom: 10px;
-    color: #b0b0b0;
+    color: #c0c0c0;
 }
 
 #nickname-input {
     width: 100%;
-    max-width: 350px;
-    padding: 12px 15px;
+    max-width: 380px;
+    padding: 14px 18px;
     margin-bottom: 15px;
-    border: 2px solid #444;
-    border-radius: 8px;
-    font-size: 1em;
+    border: 2px solid #3d3d3d;
+    border-radius: 12px;
+    font-size: 1.05em;
     outline: none;
-    background-color: #252525;
+    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
     color: #f5f5f5;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 #nickname-input:focus {
     border-color: #C62828;
-    box-shadow: 0 0 10px rgba(198, 40, 40, 0.4);
+    box-shadow: 
+        0 0 20px rgba(198, 40, 40, 0.4),
+        0 4px 20px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
 }
 
 #nickname-input::placeholder {
@@ -58,28 +116,55 @@ p {
 }
 
 button {
-    padding: 10px 20px;
+    padding: 12px 24px;
     margin: 5px;
     border: none;
-    border-radius: 8px;
-    font-size: 1em;
+    border-radius: 12px;
+    font-size: 1.05em;
     font-weight: 600;
     cursor: pointer;
-    background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+    background: linear-gradient(135deg, #D32F2F 0%, #C62828 50%, #B71C1C 100%);
     color: white;
-    transition: all 0.3s;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    min-width: 160px;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(198, 40, 40, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    min-width: 180px;
+    position: relative;
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+button:hover::before {
+    left: 100%;
 }
 
 button:hover {
-    background: linear-gradient(135deg, #B71C1C 0%, #8B0000 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(198, 40, 40, 0.6);
+    background: linear-gradient(135deg, #E53935 0%, #D32F2F 50%, #C62828 100%);
+    transform: translateY(-3px);
+    box-shadow: 
+        0 6px 25px rgba(198, 40, 40, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 button:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 
+        0 3px 15px rgba(198, 40, 40, 0.5);
+}
+
+button i {
+    margin-right: 8px;
 }
 
 .button-group {
@@ -90,10 +175,9 @@ button:active {
     justify-content: center;
 }
 
-/* Game Container untuk Layout Side by Side (Desktop) */
 .game-container {
     display: flex;
-    gap: 20px;
+    gap: 25px;
     align-items: flex-start;
     justify-content: center;
     flex-wrap: wrap;
@@ -111,226 +195,330 @@ button:active {
 
 .board {
     display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
-    gap: 12px;
-    margin: 20px auto;
+    grid-template-columns: repeat(3, 110px);
+    grid-template-rows: repeat(3, 110px);
+    gap: 15px;
+    margin: 25px auto;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(18, 18, 18, 0.8) 100%);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(198, 40, 40, 0.2);
 }
 
 .cell {
     background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
-    border-radius: 12px;
+    border-radius: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 3.5em;
     cursor: pointer;
-    transition: all 0.3s;
-    border: 3px solid #333;
+    transition: all 0.3s ease;
+    border: 3px solid #2d2d2d;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.cell::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(198, 40, 40, 0.3) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    transition: all 0.4s ease;
+}
+
+.cell:hover:not(.x):not(.o)::before {
+    width: 120%;
+    height: 120%;
 }
 
 .cell:hover:not(.x):not(.o) {
     background: linear-gradient(135deg, #3d3d3d 0%, #2a2a2a 100%);
-    transform: scale(1.05);
+    transform: scale(1.05) translateY(-2px);
     border-color: #C62828;
-    box-shadow: 0 0 20px rgba(198, 40, 40, 0.4);
+    box-shadow: 
+        0 0 25px rgba(198, 40, 40, 0.5),
+        0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 .cell.x {
     color: #FF5252;
-    background: linear-gradient(135deg, #2d1a1a 0%, #1a0f0f 100%);
+    background: linear-gradient(135deg, #3d1a1a 0%, #2d1212 100%);
     border-color: #FF5252;
-    text-shadow: 0 0 20px rgba(255, 82, 82, 0.8);
+    text-shadow: 
+        0 0 20px rgba(255, 82, 82, 0.9),
+        0 0 40px rgba(255, 82, 82, 0.5);
+    box-shadow: 
+        0 0 20px rgba(255, 82, 82, 0.3),
+        0 4px 15px rgba(0, 0, 0, 0.6);
+    animation: cellAppear 0.3s ease;
 }
 
 .cell.o {
     color: #FFA726;
-    background: linear-gradient(135deg, #2d2314 0%, #1a1609 100%);
+    background: linear-gradient(135deg, #3d2d1a 0%, #2d2012 100%);
     border-color: #FFA726;
-    text-shadow: 0 0 20px rgba(255, 167, 38, 0.8);
+    text-shadow: 
+        0 0 20px rgba(255, 167, 38, 0.9),
+        0 0 40px rgba(255, 167, 38, 0.5);
+    box-shadow: 
+        0 0 20px rgba(255, 167, 38, 0.3),
+        0 4px 15px rgba(0, 0, 0, 0.6);
+    animation: cellAppear 0.3s ease;
+}
+
+@keyframes cellAppear {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .cell.winning {
-    animation: pulse 1s infinite alternate;
+    animation: winningPulse 1s infinite alternate;
 }
 
-@keyframes pulse {
+@keyframes winningPulse {
     from {
-        box-shadow: 0 0 15px 5px #C62828;
+        box-shadow: 
+            0 0 20px 5px rgba(198, 40, 40, 0.8),
+            0 0 40px 10px rgba(198, 40, 40, 0.4);
         transform: scale(1);
     }
     to {
-        box-shadow: 0 0 30px 10px #C62828;
-        transform: scale(1.08);
+        box-shadow: 
+            0 0 30px 10px rgba(198, 40, 40, 1),
+            0 0 60px 20px rgba(198, 40, 40, 0.6);
+        transform: scale(1.1);
     }
 }
 
 #status-message {
-    min-height: 35px;
+    min-height: 40px;
     margin: 15px 0;
-    font-size: 1.2em;
-    font-weight: 600;
+    font-size: 1.3em;
+    font-weight: 700;
     color: #f5f5f5;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(198, 40, 40, 0.1) 0%, rgba(198, 40, 40, 0.05) 100%);
+    border-radius: 12px;
+    border: 2px solid rgba(198, 40, 40, 0.2);
+}
+
+#status-message i {
+    margin-right: 10px;
 }
 
 #score-display {
-    font-size: 1.1em;
+    font-size: 1.15em;
     font-weight: 600;
     color: #f5f5f5;
     margin: 15px 0;
-    padding: 8px 15px;
-    background-color: #252525;
-    border: 2px solid #444;
-    border-radius: 10px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.8) 0%, rgba(18, 18, 18, 0.9) 100%);
+    border: 2px solid #3d3d3d;
+    border-radius: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    gap: 15px;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .player-score {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.player-score:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .player-score .player-name {
-    font-weight: 400;
+    font-weight: 500;
     color: #b0b0b0;
 }
 
 .score-value {
-    font-size: 1.2em;
+    font-size: 1.3em;
     font-weight: 800;
-    padding: 0 3px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    min-width: 30px;
+    text-align: center;
 }
 
 .p1-score .score-value {
     color: #FF5252;
+    background: rgba(255, 82, 82, 0.15);
+    text-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
 }
 
 .p2-score .score-value {
     color: #FFA726;
+    background: rgba(255, 167, 38, 0.15);
+    text-shadow: 0 0 10px rgba(255, 167, 38, 0.5);
 }
 
 .score-separator {
     color: #666;
-    font-size: 1.3em;
+    font-size: 1.4em;
     padding: 0 5px;
 }
 
 #room-id-display {
-    font-size: 0.9em;
+    font-size: 0.95em;
     color: #FFA726;
-    margin-bottom: 10px;
-    padding: 8px 15px;
-    background-color: rgba(198, 40, 40, 0.15);
-    border-radius: 10px;
+    margin-bottom: 15px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, rgba(198, 40, 40, 0.2) 0%, rgba(198, 40, 40, 0.1) 100%);
+    border-radius: 12px;
     border: 2px solid rgba(198, 40, 40, 0.3);
     display: inline-block;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
 }
 
 #share-link-container {
     margin: 15px 0;
-    max-width: 500px;
+    max-width: 550px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(18, 18, 18, 0.8) 100%);
+    border-radius: 12px;
+    border: 2px solid rgba(198, 40, 40, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+#share-link-container p {
+    color: #FFA726;
+    font-weight: 600;
+    margin-bottom: 10px;
 }
 
 .share-box {
     display: flex;
     gap: 10px;
-    margin-top: 5px;
+    margin-top: 10px;
 }
 
 #share-link-input {
     flex-grow: 1;
-    padding: 10px 12px;
-    border: 2px solid #444;
-    border-radius: 8px;
-    font-size: 0.9em;
-    background-color: #252525;
+    padding: 12px 15px;
+    border: 2px solid #3d3d3d;
+    border-radius: 10px;
+    font-size: 0.95em;
+    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
     color: #f5f5f5;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 #copy-link-btn {
-    background: linear-gradient(135deg, #455A64 0%, #37474F 100%);
-    min-width: 100px;
+    background: linear-gradient(135deg, #546E7A 0%, #455A64 50%, #37474F 100%);
+    min-width: 120px;
 }
 
 #copy-link-btn:hover {
-    background: linear-gradient(135deg, #37474F 0%, #263238 100%);
+    background: linear-gradient(135deg, #607D8B 0%, #546E7A 50%, #455A64 100%);
 }
 
 #nickname-save-status {
     color: #FFA726;
     font-weight: 600;
-    min-height: 20px;
+    min-height: 25px;
+    text-shadow: 0 2px 8px rgba(255, 167, 38, 0.4);
 }
 
 #leave-room-btn {
-    background: linear-gradient(135deg, #455A64 0%, #37474F 100%);
+    background: linear-gradient(135deg, #546E7A 0%, #455A64 50%, #37474F 100%);
 }
 
 #leave-room-btn:hover {
-    background: linear-gradient(135deg, #37474F 0%, #263238 100%);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(135deg, #607D8B 0%, #546E7A 50%, #455A64 100%);
+    box-shadow: 
+        0 6px 25px rgba(0, 0, 0, 0.6);
 }
 
 /* ========================================= */
-/* CHAT & EMOJI SECTION (Desktop Default)    */
+/* CHAT & EMOJI SECTION                      */
 /* ========================================= */
 .chat-section {
     width: 100%;
-    max-width: 350px;
-    background-color: #252525;
-    border: 2px solid #444;
-    border-radius: 12px;
+    max-width: 380px;
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(18, 18, 18, 0.98) 100%);
+    border: 2px solid #3d3d3d;
+    border-radius: 15px;
     padding: 0;
     display: flex;
     flex-direction: column;
-    min-height: 450px;
+    min-height: 480px;
     max-height: 600px;
-    flex: none; 
+    flex: none;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Header di Desktop (Tidak ada mekanisme toggle, hanya tampilan) */
 .chat-toggle-header {
-    display: flex; 
-    justify-content: flex-start; 
+    display: flex;
+    justify-content: flex-start;
     align-items: center;
-    padding: 15px 15px 10px 15px; 
-    border-bottom: 2px solid #444; 
-    cursor: default; 
+    padding: 15px 18px;
+    border-bottom: 2px solid #3d3d3d;
+    cursor: default;
     min-height: auto;
+    background: linear-gradient(135deg, rgba(198, 40, 40, 0.1) 0%, transparent 100%);
 }
 
-/* Icon panah disembunyikan di Desktop */
 .chat-toggle-icon {
-    display: none; 
+    display: none;
 }
 
 .chat-header-title {
-    font-size: 1.1em;
-    font-weight: 600;
+    font-size: 1.15em;
+    font-weight: 700;
     color: #FFA726;
-    margin: 0; 
+    margin: 0;
     padding: 0;
     display: flex;
     align-items: center;
+    text-shadow: 0 2px 10px rgba(255, 167, 38, 0.3);
 }
 
-/* Penyesuaian visual untuk perataan ikon dan teks di desktop */
 .chat-header-title i {
-    margin-right: 8px;
+    margin-right: 10px;
     position: relative;
-    top: 1px; 
+    top: 1px;
 }
 
-/* Hitungan pesan di desktop (default non-menonjol) */
 #unread-count {
-    color: #FFA726; 
+    color: #FFA726;
     font-weight: 700;
-    margin-left: 5px;
+    margin-left: 8px;
     transition: color 0.3s;
 }
 
@@ -338,77 +526,89 @@ button:active {
     display: flex;
     flex-direction: column;
     flex: 1;
-    padding: 10px 15px 15px 15px; 
+    padding: 15px;
     min-height: 0;
 }
 
-
 .emoji-picker {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 15px;
-    padding: 10px;
-    background-color: #1a1a1a;
-    border-radius: 8px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.8) 0%, rgba(18, 18, 18, 0.9) 100%);
+    border-radius: 10px;
+    border: 2px solid #2d2d2d;
 }
 
 .emoji-btn {
-    font-size: 1.8em;
-    padding: 5px 10px;
-    background: transparent;
-    border: 2px solid #444;
-    border-radius: 8px;
+    font-size: 1.9em;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
+    border: 2px solid #3d3d3d;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     min-width: auto;
     margin: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .emoji-btn:hover {
-    background-color: #3d3d3d;
-    transform: scale(1.1);
+    background: linear-gradient(135deg, #3d3d3d 0%, #2a2a2a 100%);
+    transform: scale(1.15);
     border-color: #FFA726;
+    box-shadow: 
+        0 0 15px rgba(255, 167, 38, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .messages-container {
     flex: 1;
     overflow-y: auto;
     margin-bottom: 15px;
-    padding: 10px;
-    background-color: #1a1a1a;
-    border-radius: 8px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(18, 18, 18, 0.9) 0%, rgba(12, 12, 12, 0.95) 100%);
+    border-radius: 10px;
+    border: 2px solid #2d2d2d;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .messages-container::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 .messages-container::-webkit-scrollbar-track {
-    background: #252525;
-    border-radius: 4px;
+    background: #1a1a1a;
+    border-radius: 5px;
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 4px;
+    background: linear-gradient(180deg, #546E7A 0%, #455A64 100%);
+    border-radius: 5px;
+    border: 2px solid #1a1a1a;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #607D8B 0%, #546E7A 100%);
 }
 
 .message {
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
     max-width: 85%;
     word-wrap: break-word;
     animation: slideIn 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(15px);
     }
     to {
         opacity: 1;
@@ -418,65 +618,78 @@ button:active {
 
 .message.own {
     align-self: flex-end;
-    background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+    background: linear-gradient(135deg, #D32F2F 0%, #C62828 50%, #B71C1C 100%);
     color: white;
+    box-shadow: 
+        0 2px 10px rgba(198, 40, 40, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .message.other {
     align-self: flex-start;
-    background-color: #3d3d3d;
+    background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
     color: #f5f5f5;
+    box-shadow: 
+        0 2px 10px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .message.emoji-only {
-    font-size: 2.5em;
+    font-size: 2.8em;
     background: transparent;
-    padding: 5px;
+    padding: 8px;
+    box-shadow: none;
 }
 
 .message-author {
     font-size: 0.75em;
-    font-weight: 600;
-    margin-bottom: 3px;
-    opacity: 0.8;
+    font-weight: 700;
+    margin-bottom: 4px;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .message-text {
     font-size: 0.95em;
+    line-height: 1.4;
 }
 
 .message-time {
     font-size: 0.7em;
-    opacity: 0.6;
-    margin-top: 3px;
+    opacity: 0.65;
+    margin-top: 4px;
 }
 
 .chat-input-container {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 #chat-input {
     flex: 1;
-    padding: 10px 12px;
-    border: 2px solid #444;
-    border-radius: 8px;
-    background-color: #1a1a1a;
+    padding: 12px 15px;
+    border: 2px solid #3d3d3d;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
     color: #f5f5f5;
     font-size: 0.95em;
     outline: none;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 #chat-input:focus {
     border-color: #C62828;
-    box-shadow: 0 0 10px rgba(198, 40, 40, 0.4);
+    box-shadow: 
+        0 0 15px rgba(198, 40, 40, 0.3),
+        inset 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 #send-chat-btn {
-    padding: 10px 20px;
+    padding: 12px 22px;
     min-width: auto;
-    background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+    background: linear-gradient(135deg, #D32F2F 0%, #C62828 50%, #B71C1C 100%);
 }
 
 .hidden {
@@ -484,28 +697,25 @@ button:active {
 }
 
 .screen {
-    transition: opacity 0.5s;
+    transition: opacity 0.5s ease;
     text-align: center;
 }
 
 /* ========================================================= */
-/* RESPONSIVE & TOGGLE LOGIC (Untuk Mobile)                  */
+/* RESPONSIVE & TOGGLE LOGIC                                 */
 /* ========================================================= */
 @media (max-width: 768px) {
-    /* Mengubah Body agar bisa mengakomodasi fixed footer dan membatasi tinggi konten */
     body {
         justify-content: flex-start;
-        padding-bottom: 350px; /* Default padding untuk chat TERBUKA */
+        padding-bottom: 380px;
     }
 
-    /* Mengubah Game Container menjadi kolom (Sudah ada) */
     .game-container {
         flex-direction: column;
         align-items: center;
         width: 100%;
     }
 
-    /* Menata Chat Section agar FIXED di bagian bawah */
     .chat-section {
         position: fixed;
         bottom: 0;
@@ -513,81 +723,80 @@ button:active {
         right: 0;
         z-index: 100;
         max-width: 100%;
-        height: 350px;
-        border-radius: 12px 12px 0 0;
+        height: 380px;
+        border-radius: 15px 15px 0 0;
         border: none;
-        border-top: 2px solid #444;
+        border-top: 2px solid #3d3d3d;
         margin: 0;
         padding: 0;
-        transition: transform 0.3s ease-out; 
-        transform: translateY(0); /* POSISI TERBUKA (default) */
+        transition: transform 0.3s ease-out;
+        transform: translateY(0);
     }
     
-    /* Tampilkan Header Toggle di Mobile */
     .chat-toggle-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 15px;
-        font-size: 1.1em;
-        font-weight: 600;
+        padding: 12px 18px;
+        font-size: 1.15em;
+        font-weight: 700;
         color: #FFA726;
-        background-color: #252525;
-        border-radius: 12px 12px 0 0;
+        background: linear-gradient(135deg, rgba(26, 26, 26, 0.98) 0%, rgba(18, 18, 18, 1) 100%);
+        border-radius: 15px 15px 0 0;
         cursor: pointer;
         user-select: none;
-        border-bottom: 2px solid #444;
-        min-height: 46px; 
+        border-bottom: 2px solid #3d3d3d;
+        min-height: 50px;
     }
     
-    /* FIX ALIGNMENT ICON DI DALAM JUDUL */
     .chat-header-title {
-        margin: 0; 
+        margin: 0;
         padding: 0;
         display: flex;
         align-items: center;
     }
 
     .chat-header-title i {
-        margin-right: 8px;
-        /* Penyesuaian visual ke bawah */
+        margin-right: 10px;
         position: relative;
-        top: 1px; 
+        top: 1px;
     }
 
-    /* FIX ALIGNMENT ICON TOGGLE */
     .chat-toggle-icon {
         transition: transform 0.3s ease;
         transform: rotate(0deg);
-        /* Penyesuaian visual ke bawah */
         position: relative;
-        top: 1px; 
-        display: block; /* Pastikan terlihat di mobile */
+        top: 1px;
+        display: block;
+        font-size: 1.2em;
     }
 
-    /* Atur agar hitungan pesan terlihat jelas di mobile (indicator) */
     #unread-count {
-        color: #FF5252; 
+        color: #FF5252;
         font-weight: 800;
-        margin-left: 5px;
+        margin-left: 8px;
     }
     
-    /* Konten Chat Body */
     .chat-content-wrapper {
         display: flex;
         flex-direction: column;
-        height: calc(100% - 46px);
-        padding: 10px 15px 15px 15px; 
+        height: calc(100% - 50px);
+        padding: 12px 15px 15px 15px;
     }
     
-    /* === MINIMIZED STATE CLASS === */
     .chat-section.minimized {
-        /* Geser panel ke bawah sehingga hanya header yang terlihat */
-        transform: translateY(calc(100% - 46px)); 
+        transform: translateY(calc(100% - 50px));
     }
 
     .chat-section.minimized .chat-toggle-icon {
-        transform: rotate(180deg); /* Icon menunjuk ke bawah */
+        transform: rotate(180deg);
+    }
+
+    .board {
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 12px;
+        padding: 15px;
     }
 }
 
@@ -602,20 +811,21 @@ button:active {
     }
 
     .board {
-        grid-template-columns: repeat(3, 80px);
-        grid-template-rows: repeat(3, 80px);
-        gap: 8px;
+        grid-template-columns: repeat(3, 85px);
+        grid-template-rows: repeat(3, 85px);
+        gap: 10px;
+        padding: 12px;
     }
 
     .cell {
         font-size: 3em;
-        border-radius: 10px;
+        border-radius: 12px;
     }
 
     #score-display {
         flex-direction: column;
-        gap: 5px;
-        padding: 10px;
+        gap: 8px;
+        padding: 12px;
     }
 
     .score-separator {
@@ -623,19 +833,19 @@ button:active {
     }
 
     .emoji-btn {
-        font-size: 1.5em;
-        padding: 3px 8px;
+        font-size: 1.6em;
+        padding: 6px 10px;
     }
     
-    /* Sesuaikan tinggi chat section untuk layar yang lebih kecil */
     .chat-section {
-        height: 320px; 
+        height: 350px;
     }
+    
     body {
-        padding-bottom: 320px;
+        padding-bottom: 350px;
     }
     
     .chat-section.minimized {
-        transform: translateY(calc(100% - 46px)); 
+        transform: translateY(calc(100% - 50px));
     }
 }
