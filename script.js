@@ -83,218 +83,316 @@ async function sha256(message) {
 function createAuthModal() {
     if (document.getElementById('auth-modal')) return;
 
+    // Inject style sekali saja
+    if (!document.getElementById('auth-modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'auth-modal-styles';
+        style.textContent = `
+            #auth-modal * { box-sizing: border-box; }
+
+            #auth-modal-overlay {
+                position: fixed; inset: 0;
+                background: rgba(10,10,10,0.92);
+                backdrop-filter: blur(8px);
+                z-index: 9999;
+                display: flex; align-items: center; justify-content: center;
+                padding: 1rem;
+                animation: authFadeIn 0.2s ease;
+            }
+            @keyframes authFadeIn {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+            }
+
+            #auth-modal-card {
+                background: linear-gradient(135deg, #111111 0%, #1a1a1a 100%);
+                border: 1px solid #2a2a2a;
+                border-radius: 1rem;
+                width: 100%; max-width: 380px;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+                overflow: hidden;
+                animation: authSlideUp 0.25s cubic-bezier(0.4,0,0.2,1);
+                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+            @keyframes authSlideUp {
+                from { opacity: 0; transform: translateY(16px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+
+            /* Tab bar */
+            #auth-tabs {
+                display: flex;
+                border-bottom: 1px solid #2a2a2a;
+            }
+            .auth-tab-btn {
+                flex: 1; padding: 14px 0;
+                background: none; border: none; border-bottom: 2px solid transparent;
+                color: #555; font-weight: 700; font-size: 0.72rem;
+                text-transform: uppercase; letter-spacing: 0.08em;
+                cursor: pointer; margin-bottom: -1px;
+                transition: color 0.2s, border-color 0.2s;
+            }
+            .auth-tab-btn.active {
+                color: #e5e5e5;
+                border-bottom-color: #e5e5e5;
+            }
+
+            /* Body */
+            #auth-modal-body { padding: 24px 24px 20px; }
+
+            /* Header */
+            .auth-header { margin-bottom: 20px; }
+            .auth-header-logo {
+                width: 40px; height: 40px; border-radius: 50%;
+                background: linear-gradient(135deg, #C62828, #FF5252);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 1.1rem; margin-bottom: 12px;
+                box-shadow: 0 4px 14px rgba(198,40,40,0.3);
+            }
+            .auth-header h3 {
+                color: #fff; font-size: 1.05rem; font-weight: 800;
+                text-transform: uppercase; letter-spacing: 0.04em;
+                margin: 0 0 3px;
+            }
+            .auth-header p {
+                color: #555; font-size: 0.73rem; margin: 0;
+            }
+
+            /* Fields */
+            .auth-field { margin-bottom: 14px; }
+            .auth-field label {
+                display: block; color: #666; font-size: 0.68rem;
+                font-weight: 700; text-transform: uppercase;
+                letter-spacing: 0.06em; margin-bottom: 6px;
+            }
+            .auth-field-wrap { position: relative; }
+            .auth-input {
+                width: 100%; padding: 10px 12px;
+                background: #0f0f0f; border: 1px solid #2a2a2a;
+                border-radius: 0.6rem; color: #e5e5e5;
+                font-size: 0.875rem; outline: none;
+                transition: border-color 0.2s, background 0.2s;
+            }
+            .auth-input:focus {
+                border-color: #444; background: #141414;
+            }
+            .auth-input.has-icon { padding-right: 40px; }
+            .auth-eye-btn {
+                position: absolute; right: 10px; top: 50%;
+                transform: translateY(-50%);
+                background: none; border: none;
+                color: #444; cursor: pointer;
+                font-size: 0.8rem; padding: 4px;
+                transition: color 0.2s; display: flex; align-items: center;
+            }
+            .auth-eye-btn:hover { color: #888; }
+
+            /* Message */
+            #auth-message {
+                min-height: 16px; font-size: 0.73rem;
+                font-weight: 600; margin-bottom: 14px;
+                text-align: center; transition: color 0.2s;
+            }
+
+            /* Buttons */
+            .auth-btn-primary {
+                width: 100%; padding: 11px;
+                background: linear-gradient(135deg, #e5e5e5 0%, #f5f5f5 100%);
+                color: #000; border: none; border-radius: 0.6rem;
+                font-weight: 700; font-size: 0.75rem;
+                text-transform: uppercase; letter-spacing: 0.08em;
+                cursor: pointer; transition: all 0.25s;
+                box-shadow: 0 2px 8px rgba(229,229,229,0.1);
+            }
+            .auth-btn-primary:hover:not(:disabled) {
+                background: #fff;
+                box-shadow: 0 4px 16px rgba(229,229,229,0.2);
+                transform: translateY(-1px);
+            }
+            .auth-btn-primary:disabled {
+                opacity: 0.5; cursor: not-allowed; transform: none;
+            }
+            .auth-btn-secondary {
+                width: 100%; margin-top: 8px; padding: 9px;
+                background: transparent;
+                border: 1px solid #2a2a2a; border-radius: 0.6rem;
+                color: #444; font-weight: 600; font-size: 0.72rem;
+                text-transform: uppercase; letter-spacing: 0.06em;
+                cursor: pointer; transition: all 0.2s;
+            }
+            .auth-btn-secondary:hover {
+                border-color: #444; color: #888;
+            }
+
+            /* Footer note */
+            .auth-footer-note {
+                text-align: center; color: #333;
+                font-size: 0.65rem; margin-top: 16px; line-height: 1.6;
+            }
+
+            /* Nickname prompt modal */
+            #nickname-prompt-overlay {
+                position: fixed; inset: 0;
+                background: rgba(10,10,10,0.88);
+                backdrop-filter: blur(6px);
+                z-index: 9998;
+                display: flex; align-items: center; justify-content: center;
+                padding: 1rem;
+                animation: authFadeIn 0.2s ease;
+                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+            #nickname-prompt-card {
+                background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+                border: 1px solid #2a2a2a;
+                border-radius: 1rem;
+                width: 100%; max-width: 340px;
+                padding: 24px 22px 20px;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+                animation: authSlideUp 0.25s cubic-bezier(0.4,0,0.2,1);
+                text-align: center;
+                box-sizing: border-box;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     const modal = document.createElement('div');
     modal.id = 'auth-modal';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.88); z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        backdrop-filter: blur(5px);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    `;
 
     modal.innerHTML = `
-        <div style="
-            background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
-            border: 1.5px solid #333;
-            border-radius: 18px;
-            padding: 28px 26px 24px;
-            width: 92%;
-            max-width: 360px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-            position: relative;
-        ">
-            <!-- Header Tabs -->
-            <div style="display:flex; gap:0; margin-bottom:22px; border-bottom: 1.5px solid #333;">
-                <button id="tab-login" onclick="switchAuthTab('login')" style="
-                    flex:1; padding:10px 0; background:none; border:none;
-                    color:#FF5252; font-weight:700; font-size:0.85em; cursor:pointer;
-                    border-bottom: 2.5px solid #FF5252; margin-bottom:-1.5px;
-                    text-transform:uppercase; letter-spacing:0.5px; transition:all 0.2s;
-                ">Login</button>
-                <button id="tab-register" onclick="switchAuthTab('register')" style="
-                    flex:1; padding:10px 0; background:none; border:none;
-                    color:#666; font-weight:700; font-size:0.85em; cursor:pointer;
-                    border-bottom: 2.5px solid transparent; margin-bottom:-1.5px;
-                    text-transform:uppercase; letter-spacing:0.5px; transition:all 0.2s;
-                ">Register</button>
-            </div>
+        <div id="auth-modal-overlay">
+            <div id="auth-modal-card">
+                <!-- Tabs -->
+                <div id="auth-tabs">
+                    <button id="tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">Login</button>
+                    <button id="tab-register" class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
+                </div>
 
-            <!-- Icon -->
-            <div style="text-align:center; margin-bottom:16px;">
-                <div style="
-                    width:52px; height:52px; border-radius:50%;
-                    background: linear-gradient(135deg, #C62828, #FF5252);
-                    display:inline-flex; align-items:center; justify-content:center;
-                    box-shadow: 0 4px 15px rgba(198,40,40,0.4);
-                    font-size:1.4em;
-                ">🎮</div>
-                <p id="auth-subtitle" style="color:#888; font-size:0.76em; margin-top:8px;">Masuk ke akun kamu</p>
-            </div>
+                <!-- Body -->
+                <div id="auth-modal-body">
+                    <!-- Header -->
+                    <div class="auth-header">
+                        <div class="auth-header-logo">🎮</div>
+                        <h3 id="auth-title">Masuk Akun</h3>
+                        <p id="auth-subtitle">Login untuk akses fitur spesial</p>
+                    </div>
 
-            <!-- Username -->
-            <div style="margin-bottom:13px;">
-                <label style="color:#aaa; font-size:0.7em; font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px; letter-spacing:0.5px;">Username</label>
-                <input id="auth-username" type="text" placeholder="Masukkan username" maxlength="15"
-                    style="
-                        width:100%; padding:10px 12px; border-radius:9px;
-                        border:1.5px solid #333; background:#111;
-                        color:#fff; font-size:0.88em; outline:none; box-sizing:border-box;
-                        transition: border-color 0.25s;
-                    "
-                    onfocus="this.style.borderColor='#C62828'"
-                    onblur="this.style.borderColor='#333'"
-                >
-            </div>
+                    <!-- Username -->
+                    <div class="auth-field">
+                        <label><i class="fas fa-user" style="margin-right:5px;opacity:0.5;"></i>Username</label>
+                        <input id="auth-username" class="auth-input" type="text"
+                            placeholder="username kamu" maxlength="15" autocomplete="off"
+                            onkeydown="if(event.key==='Enter') document.getElementById('auth-password').focus()">
+                    </div>
 
-            <!-- Password -->
-            <div style="margin-bottom:13px;">
-                <label style="color:#aaa; font-size:0.7em; font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px; letter-spacing:0.5px;">Password</label>
-                <div style="position:relative;">
-                    <input id="auth-password" type="password" placeholder="Masukkan password" maxlength="32"
-                        style="
-                            width:100%; padding:10px 40px 10px 12px; border-radius:9px;
-                            border:1.5px solid #333; background:#111;
-                            color:#fff; font-size:0.88em; outline:none; box-sizing:border-box;
-                            transition: border-color 0.25s;
-                        "
-                        onfocus="this.style.borderColor='#C62828'"
-                        onblur="this.style.borderColor='#333'"
-                        onkeydown="if(event.key==='Enter') submitAuth()"
-                    >
-                    <button onclick="toggleAuthPassword()" style="
-                        position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                        background:none; border:none; color:#666; cursor:pointer;
-                        font-size:1em; padding:0; display:flex; align-items:center;
-                        transition: color 0.2s;
-                    " onmouseover="this.style.color='#aaa'" onmouseout="this.style.color='#666'">👁</button>
+                    <!-- Password -->
+                    <div class="auth-field">
+                        <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Password</label>
+                        <div class="auth-field-wrap">
+                            <input id="auth-password" class="auth-input has-icon" type="password"
+                                placeholder="••••••••" maxlength="32"
+                                onkeydown="if(event.key==='Enter') submitAuth()">
+                            <button class="auth-eye-btn" onclick="toggleAuthPassword()" type="button" tabindex="-1">
+                                <i id="auth-eye-icon" class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password (register only) -->
+                    <div class="auth-field" id="confirm-pw-wrapper" style="display:none;">
+                        <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Konfirmasi Password</label>
+                        <input id="auth-confirm-password" class="auth-input" type="password"
+                            placeholder="ulangi password" maxlength="32"
+                            onkeydown="if(event.key==='Enter') submitAuth()">
+                    </div>
+
+                    <!-- Message -->
+                    <div id="auth-message"></div>
+
+                    <!-- Submit -->
+                    <button id="auth-submit-btn" class="auth-btn-primary" onclick="submitAuth()">
+                        <i class="fas fa-sign-in-alt" style="margin-right:6px;"></i>Login
+                    </button>
+                    <button class="auth-btn-secondary" onclick="closeAuthModal()">
+                        Lanjut tanpa akun
+                    </button>
+
+                    <p class="auth-footer-note">
+                        Data tersimpan aman di Firebase.<br>Akun diperlukan untuk fitur spesial.
+                    </p>
                 </div>
             </div>
-
-            <!-- Confirm Password (register only) -->
-            <div id="confirm-pw-wrapper" style="margin-bottom:13px; display:none;">
-                <label style="color:#aaa; font-size:0.7em; font-weight:600; text-transform:uppercase; display:block; margin-bottom:5px; letter-spacing:0.5px;">Konfirmasi Password</label>
-                <input id="auth-confirm-password" type="password" placeholder="Ulangi password" maxlength="32"
-                    style="
-                        width:100%; padding:10px 12px; border-radius:9px;
-                        border:1.5px solid #333; background:#111;
-                        color:#fff; font-size:0.88em; outline:none; box-sizing:border-box;
-                        transition: border-color 0.25s;
-                    "
-                    onfocus="this.style.borderColor='#C62828'"
-                    onblur="this.style.borderColor='#333'"
-                    onkeydown="if(event.key==='Enter') submitAuth()"
-                >
-            </div>
-
-            <!-- Error / Info Message -->
-            <div id="auth-message" style="
-                min-height:18px; font-size:0.78em; margin-bottom:14px;
-                text-align:center; font-weight:600;
-            "></div>
-
-            <!-- Submit Button -->
-            <button id="auth-submit-btn" onclick="submitAuth()" style="
-                width:100%; padding:11px; border-radius:9px; border:none;
-                background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
-                color:#fff; font-weight:700; cursor:pointer; font-size:0.88em;
-                text-transform:uppercase; letter-spacing:0.8px;
-                transition: all 0.25s; box-shadow: 0 3px 12px rgba(198,40,40,0.35);
-            "
-            onmouseover="this.style.opacity='0.88'; this.style.transform='translateY(-1px)'"
-            onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">
-                Login
-            </button>
-
-            <!-- Skip / Close -->
-            <button onclick="closeAuthModal()" style="
-                width:100%; margin-top:10px; padding:8px; border-radius:9px;
-                border: 1.5px solid #333; background:transparent;
-                color:#666; font-weight:600; cursor:pointer; font-size:0.78em;
-                text-transform:uppercase; transition: all 0.2s;
-            "
-            onmouseover="this.style.borderColor='#555'; this.style.color='#aaa'"
-            onmouseout="this.style.borderColor='#333'; this.style.color='#666'">
-                Lanjut tanpa akun
-            </button>
-
-            <!-- Login status info -->
-            <p style="text-align:center; color:#444; font-size:0.68em; margin-top:14px; line-height:1.5;">
-                Akun diperlukan untuk fitur spesial.<br>Data tersimpan aman di Firebase.
-            </p>
         </div>
     `;
 
     document.body.appendChild(modal);
-    setTimeout(() => {
-        const u = document.getElementById('auth-username');
-        if (u) u.focus();
-    }, 120);
+    setTimeout(() => { document.getElementById('auth-username')?.focus(); }, 100);
 }
 
 let currentAuthTab = 'login';
 
 function switchAuthTab(tab) {
     currentAuthTab = tab;
-    const loginTab = document.getElementById('tab-login');
-    const registerTab = document.getElementById('tab-register');
-    const confirmWrapper = document.getElementById('confirm-pw-wrapper');
-    const subtitle = document.getElementById('auth-subtitle');
+    const loginTab  = document.getElementById('tab-login');
+    const regTab    = document.getElementById('tab-register');
+    const confirmWr = document.getElementById('confirm-pw-wrapper');
+    const title     = document.getElementById('auth-title');
+    const subtitle  = document.getElementById('auth-subtitle');
     const submitBtn = document.getElementById('auth-submit-btn');
-    const msgEl = document.getElementById('auth-message');
-
+    const msgEl     = document.getElementById('auth-message');
     if (msgEl) msgEl.textContent = '';
 
     if (tab === 'login') {
-        loginTab.style.color = '#FF5252';
-        loginTab.style.borderBottomColor = '#FF5252';
-        registerTab.style.color = '#666';
-        registerTab.style.borderBottomColor = 'transparent';
-        if (confirmWrapper) confirmWrapper.style.display = 'none';
-        if (subtitle) subtitle.textContent = 'Masuk ke akun kamu';
-        if (submitBtn) submitBtn.textContent = 'Login';
+        loginTab?.classList.add('active');
+        regTab?.classList.remove('active');
+        if (confirmWr) confirmWr.style.display = 'none';
+        if (title)    title.textContent    = 'Masuk Akun';
+        if (subtitle) subtitle.textContent = 'Login untuk akses fitur spesial';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right:6px;"></i>Login';
     } else {
-        registerTab.style.color = '#FF5252';
-        registerTab.style.borderBottomColor = '#FF5252';
-        loginTab.style.color = '#666';
-        loginTab.style.borderBottomColor = 'transparent';
-        if (confirmWrapper) confirmWrapper.style.display = 'block';
-        if (subtitle) subtitle.textContent = 'Buat akun baru';
-        if (submitBtn) submitBtn.textContent = 'Daftar';
+        regTab?.classList.add('active');
+        loginTab?.classList.remove('active');
+        if (confirmWr) confirmWr.style.display = 'block';
+        if (title)    title.textContent    = 'Buat Akun';
+        if (subtitle) subtitle.textContent = 'Daftar untuk mulai bermain';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-user-plus" style="margin-right:6px;"></i>Daftar';
     }
 }
 
 function toggleAuthPassword() {
-    const pw = document.getElementById('auth-password');
-    if (pw) pw.type = pw.type === 'password' ? 'text' : 'password';
+    const pw   = document.getElementById('auth-password');
+    const icon = document.getElementById('auth-eye-icon');
+    if (!pw) return;
+    const isHidden = pw.type === 'password';
+    pw.type = isHidden ? 'text' : 'password';
+    if (icon) {
+        icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    }
 }
 
-function setAuthMessage(text, color = '#FF5252') {
+function setAuthMessage(text, color = '#ef4444') {
     const el = document.getElementById('auth-message');
     if (el) { el.textContent = text; el.style.color = color; }
 }
 
 async function submitAuth() {
-    const username = (document.getElementById('auth-username')?.value || '').trim().toLowerCase();
-    const password = document.getElementById('auth-password')?.value || '';
+    const username  = (document.getElementById('auth-username')?.value || '').trim().toLowerCase();
+    const password  = document.getElementById('auth-password')?.value || '';
     const submitBtn = document.getElementById('auth-submit-btn');
 
-    if (!username) { setAuthMessage('⚠️ Username wajib diisi'); return; }
-    if (username.length < 3) { setAuthMessage('⚠️ Username minimal 3 karakter'); return; }
-    if (!password) { setAuthMessage('⚠️ Password wajib diisi'); return; }
-    if (password.length < 6) { setAuthMessage('⚠️ Password minimal 6 karakter'); return; }
-
-    // Cegah karakter berbahaya
+    if (!username)          { setAuthMessage('⚠️ Username wajib diisi'); return; }
+    if (username.length < 3){ setAuthMessage('⚠️ Username minimal 3 karakter'); return; }
+    if (!password)          { setAuthMessage('⚠️ Password wajib diisi'); return; }
+    if (password.length < 6){ setAuthMessage('⚠️ Password minimal 6 karakter'); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        setAuthMessage('⚠️ Username hanya boleh huruf, angka, underscore');
+        setAuthMessage('⚠️ Username hanya huruf, angka, underscore');
         return;
     }
 
-    if (submitBtn) { submitBtn.textContent = '⏳ Memproses...'; submitBtn.disabled = true; }
+    if (submitBtn) { submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="margin-right:6px;"></i>Memproses...'; submitBtn.disabled = true; }
 
     try {
         const hashedPassword = await sha256(password);
-
         if (currentAuthTab === 'register') {
             await doRegister(username, hashedPassword);
         } else {
@@ -306,112 +404,70 @@ async function submitAuth() {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = currentAuthTab === 'login' ? 'Login' : 'Daftar';
+            if (currentAuthTab === 'login') {
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right:6px;"></i>Login';
+            } else {
+                submitBtn.innerHTML = '<i class="fas fa-user-plus" style="margin-right:6px;"></i>Daftar';
+            }
         }
     }
 }
 
 async function doRegister(username, hashedPassword) {
-    const confirmPw = document.getElementById('auth-confirm-password')?.value || '';
+    const confirmPw  = document.getElementById('auth-confirm-password')?.value || '';
     const originalPw = document.getElementById('auth-password')?.value || '';
+    if (originalPw !== confirmPw) { setAuthMessage('⚠️ Password tidak cocok'); return; }
 
-    if (originalPw !== confirmPw) {
-        setAuthMessage('⚠️ Password tidak cocok');
-        return;
-    }
-
-    // Cek apakah username sudah ada
     const snapshot = await usersRef.child(username).once('value');
-    if (snapshot.exists()) {
-        setAuthMessage('⚠️ Username sudah dipakai, pilih yang lain');
-        return;
-    }
+    if (snapshot.exists()) { setAuthMessage('⚠️ Username sudah dipakai, pilih yang lain'); return; }
 
-    // Simpan user baru ke Firebase
-    // isGodMode: false by default — harus di-set manual via Firebase Console
     await usersRef.child(username).set({
-        username: username,
-        passwordHash: hashedPassword,
-        isGodMode: false,
-        createdAt: Date.now()
+        username, passwordHash: hashedPassword,
+        isGodMode: false, createdAt: Date.now()
     });
 
-    setAuthMessage('✅ Akun berhasil dibuat! Silakan login.', '#4CAF50');
-
-    // Auto switch ke tab login
+    setAuthMessage('✅ Akun berhasil dibuat! Silakan login.', '#4ade80');
     setTimeout(() => {
         switchAuthTab('login');
-        const pwEl = document.getElementById('auth-password');
-        if (pwEl) { pwEl.value = ''; pwEl.focus(); }
+        const pw = document.getElementById('auth-password');
+        if (pw) { pw.value = ''; pw.focus(); }
         setAuthMessage('');
     }, 1500);
 }
 
 async function doLogin(username, hashedPassword) {
     const snapshot = await usersRef.child(username).once('value');
-
-    if (!snapshot.exists()) {
-        setAuthMessage('❌ Akun tidak ditemukan');
-        return;
-    }
+    if (!snapshot.exists()) { setAuthMessage('❌ Akun tidak ditemukan'); return; }
 
     const userData = snapshot.val();
-
-    // Simulasi delay anti brute-force
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(r => setTimeout(r, 400));
 
     if (userData.passwordHash !== hashedPassword) {
         setAuthMessage('❌ Password salah');
-        const pwEl = document.getElementById('auth-password');
-        if (pwEl) { pwEl.value = ''; pwEl.focus(); }
+        const pw = document.getElementById('auth-password');
+        if (pw) { pw.value = ''; pw.focus(); }
         return;
     }
 
-    // ✅ Login berhasil
-    currentUser = {
-        username: userData.username,
-        isGodMode: userData.isGodMode === true
-    };
-
-    isGodMode = currentUser.isGodMode;
-
-    // Simpan hanya username di sessionStorage (bukan isGodMode — selalu fetch dari Firebase)
+    currentUser = { username: userData.username, isGodMode: userData.isGodMode === true };
+    isGodMode   = currentUser.isGodMode;
     sessionStorage.setItem('ttt-user', JSON.stringify({ username: currentUser.username }));
-
-    // Listen realtime perubahan isGodMode dari Firebase
-    // Jadi kalau admin ubah di Console, langsung aktif tanpa perlu re-login
     startGodModeListener(currentUser.username);
 
-    setAuthMessage('✅ Login berhasil!', '#4CAF50');
-
-    // Update nickname otomatis dari username akun
+    setAuthMessage('✅ Login berhasil!', '#4ade80');
     nickname = userData.username;
     nicknameInput.value = nickname;
     localStorage.setItem('givy-tictactoe-nickname', nickname);
-
-    // Update UI auth button
     updateAuthButton();
 
     setTimeout(() => {
         closeAuthModal();
-
-        // Tampilkan info God Mode jika aktif
         if (isGodMode) {
-            const statusEl = document.getElementById('nickname-save-status');
-            if (statusEl) {
-                statusEl.textContent = '🎮 God Mode Aktif!';
-                statusEl.style.color = '#FFD700';
-                setTimeout(() => { statusEl.textContent = ''; }, 4000);
-            }
+            const el = document.getElementById('nickname-save-status');
+            if (el) { el.textContent = '🎮 God Mode Aktif!'; el.style.color = '#FFD700'; setTimeout(() => { el.textContent = ''; }, 4000); }
         }
-
-        // Jalankan aksi yang pending (jika login dipicu sebelum create/join room)
-        if (window._pendingAction) {
-            const action = window._pendingAction;
-            window._pendingAction = null;
-            action();
-        }
-    }, 1000);
+        if (window._pendingAction) { const a = window._pendingAction; window._pendingAction = null; a(); }
+    }, 900);
 }
 
 function closeAuthModal() {
@@ -425,31 +481,33 @@ function closeAuthModal() {
 // ============================================================
 
 function injectAuthButton() {
-    // Cek apakah tombol sudah ada
     if (document.getElementById('auth-btn-wrapper')) return;
 
     const wrapper = document.createElement('div');
     wrapper.id = 'auth-btn-wrapper';
-    wrapper.style.cssText = 'margin-bottom: 12px; text-align: center;';
+    wrapper.style.cssText = 'margin-bottom: 14px; text-align: center;';
 
     const btn = document.createElement('button');
     btn.id = 'auth-main-btn';
-    btn.innerHTML = '<i class="fas fa-user"></i> Login / Daftar Akun';
+    btn.innerHTML = '<i class="fas fa-user" style="margin-right:7px;"></i>Login / Daftar Akun';
     btn.style.cssText = `
-        background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
-        color: #FFA726; border: 1.5px solid #444; border-radius: 8px;
-        padding: 8px 20px; font-size: 0.85em; font-weight: 600;
+        background: transparent;
+        color: #888; border: 1px solid #2a2a2a; border-radius: 8px;
+        padding: 9px 22px; font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase;
         cursor: pointer; transition: all 0.25s; min-width: 200px;
+        font-family: 'Segoe UI', sans-serif;
     `;
-    btn.onmouseover = () => { btn.style.borderColor = '#FFA726'; };
-    btn.onmouseout = () => { btn.style.borderColor = '#444'; };
+    btn.onmouseover = () => { btn.style.borderColor = '#555'; btn.style.color = '#ccc'; };
+    btn.onmouseout  = () => {
+        if (!currentUser) { btn.style.borderColor = '#2a2a2a'; btn.style.color = '#888'; }
+    };
     btn.onclick = () => { createAuthModal(); switchAuthTab('login'); };
 
     wrapper.appendChild(btn);
 
-    // Sisipkan sebelum nickname-save-status
     const saveStatus = document.getElementById('nickname-save-status');
-    if (saveStatus && saveStatus.parentNode) {
+    if (saveStatus?.parentNode) {
         saveStatus.parentNode.insertBefore(wrapper, saveStatus);
     } else {
         setupScreen.appendChild(wrapper);
@@ -461,22 +519,113 @@ function updateAuthButton() {
     if (!btn) return;
 
     if (currentUser) {
-        btn.innerHTML = `<i class="fas fa-user-check"></i> ${currentUser.username}${currentUser.isGodMode ? ' 🎮' : ''}`;
-        btn.style.color = currentUser.isGodMode ? '#FFD700' : '#4CAF50';
-        btn.style.borderColor = currentUser.isGodMode ? '#FFD700' : '#4CAF50';
+        const godBadge = currentUser.isGodMode ? ' <span style="color:#FFD700;font-size:0.9em;">🎮</span>' : '';
+        btn.innerHTML = `<i class="fas fa-user-check" style="margin-right:7px;color:#4ade80;"></i>${currentUser.username}${godBadge}`;
+        btn.style.color = '#e5e5e5';
+        btn.style.borderColor = currentUser.isGodMode ? '#FFD700' : '#4ade80';
+        btn.onmouseover = () => { btn.style.opacity = '0.8'; };
+        btn.onmouseout  = () => { btn.style.opacity = '1'; };
         btn.onclick = () => {
-            if (confirm(`Logout dari akun "${currentUser.username}"?`)) {
-                doLogout();
-            }
+            if (confirm(`Logout dari akun "${currentUser.username}"?`)) doLogout();
         };
     } else {
-        btn.innerHTML = '<i class="fas fa-user"></i> Login / Daftar Akun';
-        btn.style.color = '#FFA726';
-        btn.style.borderColor = '#444';
+        btn.innerHTML = '<i class="fas fa-user" style="margin-right:7px;"></i>Login / Daftar Akun';
+        btn.style.color = '#888';
+        btn.style.borderColor = '#2a2a2a';
+        btn.onmouseover = () => { btn.style.borderColor = '#555'; btn.style.color = '#ccc'; };
+        btn.onmouseout  = () => { btn.style.borderColor = '#2a2a2a'; btn.style.color = '#888'; };
         btn.onclick = () => { createAuthModal(); switchAuthTab('login'); };
     }
 }
 
+// ============================================================
+// Nickname Prompt (untuk user tanpa akun buka via link)
+// ============================================================
+
+function showNicknamePrompt(callback) {
+    if (document.getElementById('nickname-prompt-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'nickname-prompt-modal';
+
+    modal.innerHTML = `
+        <div id="nickname-prompt-overlay">
+            <div id="nickname-prompt-card">
+                <div style="
+                    width:38px; height:38px; border-radius:50%;
+                    background:linear-gradient(135deg,#C62828,#FF5252);
+                    display:inline-flex; align-items:center; justify-content:center;
+                    font-size:1rem; margin-bottom:12px;
+                    box-shadow:0 4px 14px rgba(198,40,40,0.3);
+                ">🎮</div>
+                <h3 style="
+                    color:#fff; font-size:0.95rem; font-weight:800;
+                    text-transform:uppercase; letter-spacing:0.04em;
+                    margin:0 0 4px;
+                ">Masukkan Nama</h3>
+                <p style="color:#555; font-size:0.72rem; margin:0 0 18px;">
+                    Nama yang tampil saat bermain
+                </p>
+                <input id="prompt-nickname-input" type="text"
+                    placeholder="nama panggilanmu..." maxlength="15"
+                    style="
+                        width:100%; padding:10px 12px;
+                        background:#0f0f0f; border:1px solid #2a2a2a;
+                        border-radius:0.6rem; color:#e5e5e5;
+                        font-size:0.875rem; outline:none;
+                        margin-bottom:14px; box-sizing:border-box;
+                        transition:border-color 0.2s;
+                        font-family:'Segoe UI',sans-serif;
+                    "
+                    onfocus="this.style.borderColor='#444'"
+                    onblur="this.style.borderColor='#2a2a2a'"
+                    onkeydown="if(event.key==='Enter') confirmNicknamePrompt()"
+                >
+                <button onclick="confirmNicknamePrompt()" style="
+                    width:100%; padding:10px;
+                    background:linear-gradient(135deg,#e5e5e5,#f5f5f5);
+                    color:#000; border:none; border-radius:0.6rem;
+                    font-weight:700; font-size:0.75rem;
+                    text-transform:uppercase; letter-spacing:0.07em;
+                    cursor:pointer; margin-bottom:8px;
+                    transition:all 0.2s; font-family:'Segoe UI',sans-serif;
+                ">
+                    <i class="fas fa-gamepad" style="margin-right:6px;"></i>Mulai Bermain
+                </button>
+                <button onclick="document.getElementById('nickname-prompt-modal').remove()" style="
+                    width:100%; padding:8px; background:transparent;
+                    border:1px solid #2a2a2a; border-radius:0.6rem;
+                    color:#444; font-size:0.7rem; font-weight:600;
+                    text-transform:uppercase; letter-spacing:0.06em;
+                    cursor:pointer; transition:all 0.2s;
+                    font-family:'Segoe UI',sans-serif;
+                ">Batal</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    window._nicknamePromptCallback = callback;
+    setTimeout(() => { document.getElementById('prompt-nickname-input')?.focus(); }, 100);
+}
+
+function confirmNicknamePrompt() {
+    const inp = document.getElementById('prompt-nickname-input');
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (!val) { inp.style.borderColor = '#C62828'; inp.focus(); return; }
+    const sanitized = sanitizeInput(val);
+    if (!sanitized) return;
+    nickname = sanitized;
+    nicknameInput.value = sanitized;
+    localStorage.setItem('givy-tictactoe-nickname', sanitized);
+    document.getElementById('nickname-prompt-modal')?.remove();
+    if (window._nicknamePromptCallback) {
+        const cb = window._nicknamePromptCallback;
+        window._nicknamePromptCallback = null;
+        cb();
+    }
+}
 
 // ============================================================
 // 🔄 REALTIME GOD MODE LISTENER
@@ -697,83 +846,6 @@ function loadNickname() {
     }
 }
 // Tampilkan mini modal untuk isi nickname sebelum join
-function showNicknamePrompt(callback) {
-    if (document.getElementById('nickname-prompt-modal')) return;
-
-    const modal = document.createElement('div');
-    modal.id = 'nickname-prompt-modal';
-    modal.style.cssText = `
-        position:fixed; top:0; left:0; width:100%; height:100%;
-        background:rgba(0,0,0,0.8); z-index:9998;
-        display:flex; align-items:center; justify-content:center;
-        backdrop-filter:blur(4px);
-        font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-    `;
-    modal.innerHTML = `
-        <div style="
-            background:linear-gradient(135deg,#1a1a1a,#252525);
-            border:1.5px solid #333; border-radius:16px;
-            padding:24px 22px; width:90%; max-width:320px;
-            box-shadow:0 20px 50px rgba(0,0,0,0.6); text-align:center;
-        ">
-            <div style="font-size:2em; margin-bottom:10px;">🎮</div>
-            <h3 style="color:#fff; font-size:1em; margin-bottom:6px; font-weight:700;">Masukkan Nama</h3>
-            <p style="color:#888; font-size:0.75em; margin-bottom:16px;">Nama yang akan tampil saat bermain</p>
-            <input id="prompt-nickname-input" type="text" placeholder="Nama panggilanmu..." maxlength="15"
-                style="
-                    width:100%; padding:10px 12px; border-radius:9px;
-                    border:1.5px solid #333; background:#111;
-                    color:#fff; font-size:0.9em; outline:none; box-sizing:border-box;
-                    margin-bottom:14px; transition:border-color 0.25s;
-                "
-                onfocus="this.style.borderColor='#C62828'"
-                onblur="this.style.borderColor='#333'"
-                onkeydown="if(event.key==='Enter') confirmNicknamePrompt()"
-            >
-            <button onclick="confirmNicknamePrompt()" style="
-                width:100%; padding:10px; border-radius:9px; border:none;
-                background:linear-gradient(135deg,#C62828,#B71C1C);
-                color:#fff; font-weight:700; cursor:pointer; font-size:0.88em;
-                text-transform:uppercase; letter-spacing:0.5px;
-                box-shadow:0 3px 12px rgba(198,40,40,0.35);
-            ">Gabung Sekarang</button>
-            <button onclick="document.getElementById('nickname-prompt-modal').remove()" style="
-                width:100%; margin-top:8px; padding:8px; border-radius:9px;
-                border:1.5px solid #333; background:transparent;
-                color:#666; font-weight:600; cursor:pointer; font-size:0.75em;
-            ">Batal</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    // Simpan callback
-    window._nicknamePromptCallback = callback;
-
-    setTimeout(() => {
-        const inp = document.getElementById('prompt-nickname-input');
-        if (inp) inp.focus();
-    }, 100);
-}
-
-function confirmNicknamePrompt() {
-    const inp = document.getElementById('prompt-nickname-input');
-    if (!inp) return;
-    const val = inp.value.trim();
-    if (!val) { inp.style.borderColor = '#C62828'; inp.focus(); return; }
-    const sanitized = sanitizeInput(val);
-    if (!sanitized) return;
-    nickname = sanitized;
-    nicknameInput.value = sanitized;
-    localStorage.setItem('givy-tictactoe-nickname', sanitized);
-    const modal = document.getElementById('nickname-prompt-modal');
-    if (modal) modal.remove();
-    if (window._nicknamePromptCallback) {
-        const cb = window._nicknamePromptCallback;
-        window._nicknamePromptCallback = null;
-        cb();
-    }
-}
-
 
 
 function generateBoardHTML() {
