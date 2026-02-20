@@ -370,13 +370,17 @@ async function doLogin(username, hashedPassword) {
     // ✅ Login berhasil
     currentUser = {
         username: userData.username,
-        isGodMode: userData.isGodMode === true // Hanya true jika benar-benar true di Firebase
+        isGodMode: userData.isGodMode === true
     };
 
     isGodMode = currentUser.isGodMode;
 
-    // Simpan session di sessionStorage (hilang saat tab ditutup)
-    sessionStorage.setItem('ttt-user', JSON.stringify(currentUser));
+    // Simpan hanya username di sessionStorage (bukan isGodMode — selalu fetch dari Firebase)
+    sessionStorage.setItem('ttt-user', JSON.stringify({ username: currentUser.username }));
+
+    // Listen realtime perubahan isGodMode dari Firebase
+    // Jadi kalau admin ubah di Console, langsung aktif tanpa perlu re-login
+    startGodModeListener(currentUser.username);
 
     setAuthMessage('✅ Login berhasil!', '#4CAF50');
 
@@ -473,7 +477,75 @@ function updateAuthButton() {
     }
 }
 
+
+// ============================================================
+// 🔄 REALTIME GOD MODE LISTENER
+// Dengarkan perubahan isGodMode dari Firebase secara realtime.
+// Jadi admin tinggal ubah di Firebase Console → langsung aktif.
+// ============================================================
+
+function startGodModeListener(username) {
+    // Hapus listener lama kalau ada
+    usersRef.child(username).off('value');
+
+    usersRef.child(username).on('value', snapshot => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.val();
+        const newGodMode = data.isGodMode === true;
+
+        if (!currentUser) return;
+
+        const wasGodMode = isGodMode;
+        isGodMode = newGodMode;
+        currentUser.isGodMode = newGodMode;
+
+        // Update UI tombol auth
+        updateAuthButton();
+
+        // Kasih tahu user kalau God Mode baru aktif
+        if (!wasGodMode && newGodMode) {
+            const statusEl = document.getElementById('nickname-save-status');
+            if (statusEl) {
+                statusEl.textContent = '🎮 God Mode Aktif!';
+                statusEl.style.color = '#FFD700';
+                setTimeout(() => { statusEl.textContent = ''; }, 4000);
+            }
+        }
+    });
+}
+
+// Restore session dari Firebase (bukan dari cache sessionStorage)
+function restoreSessionFromFirebase(username) {
+    usersRef.child(username).once('value', snapshot => {
+        if (!snapshot.exists()) {
+            // User tidak ada di Firebase, hapus session
+            sessionStorage.removeItem('ttt-user');
+            return;
+        }
+
+        const data = snapshot.val();
+
+        currentUser = {
+            username: data.username || username,
+            isGodMode: data.isGodMode === true
+        };
+
+        isGodMode = currentUser.isGodMode;
+        nickname = currentUser.username;
+        nicknameInput.value = nickname;
+
+        updateAuthButton();
+
+        // Mulai listen realtime setelah restore
+        startGodModeListener(username);
+    });
+}
+
 function doLogout() {
+    // Hentikan listener Firebase sebelum logout
+    if (currentUser) {
+        usersRef.child(currentUser.username).off('value');
+    }
     currentUser = null;
     isGodMode = false;
     sessionStorage.removeItem('ttt-user');
@@ -1088,15 +1160,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNickname();
     injectAuthButton();
 
-    // Restore session jika ada
+    // Restore session jika ada — re-fetch dari Firebase untuk dapat nilai isGodMode terbaru
     const savedSession = sessionStorage.getItem('ttt-user');
     if (savedSession) {
         try {
-            currentUser = JSON.parse(savedSession);
-            isGodMode = currentUser.isGodMode === true;
-            nickname = currentUser.username;
-            nicknameInput.value = nickname;
-            updateAuthButton();
+            const parsed = JSON.parse(savedSession);
+            if (parsed && parsed.username) {
+                // Re-fetch data user dari Firebase (bukan percaya cache)
+                restoreSessionFromFirebase(parsed.username);
+            } else {
+                sessionStorage.removeItem('ttt-user');
+            }
         } catch (e) {
             sessionStorage.removeItem('ttt-user');
         }
