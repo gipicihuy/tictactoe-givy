@@ -624,6 +624,85 @@ function loadNickname() {
         nickname = sanitizeInput(saved);
     }
 }
+// Tampilkan mini modal untuk isi nickname sebelum join
+function showNicknamePrompt(callback) {
+    if (document.getElementById('nickname-prompt-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'nickname-prompt-modal';
+    modal.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.8); z-index:9998;
+        display:flex; align-items:center; justify-content:center;
+        backdrop-filter:blur(4px);
+        font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background:linear-gradient(135deg,#1a1a1a,#252525);
+            border:1.5px solid #333; border-radius:16px;
+            padding:24px 22px; width:90%; max-width:320px;
+            box-shadow:0 20px 50px rgba(0,0,0,0.6); text-align:center;
+        ">
+            <div style="font-size:2em; margin-bottom:10px;">🎮</div>
+            <h3 style="color:#fff; font-size:1em; margin-bottom:6px; font-weight:700;">Masukkan Nama</h3>
+            <p style="color:#888; font-size:0.75em; margin-bottom:16px;">Nama yang akan tampil saat bermain</p>
+            <input id="prompt-nickname-input" type="text" placeholder="Nama panggilanmu..." maxlength="15"
+                style="
+                    width:100%; padding:10px 12px; border-radius:9px;
+                    border:1.5px solid #333; background:#111;
+                    color:#fff; font-size:0.9em; outline:none; box-sizing:border-box;
+                    margin-bottom:14px; transition:border-color 0.25s;
+                "
+                onfocus="this.style.borderColor='#C62828'"
+                onblur="this.style.borderColor='#333'"
+                onkeydown="if(event.key==='Enter') confirmNicknamePrompt()"
+            >
+            <button onclick="confirmNicknamePrompt()" style="
+                width:100%; padding:10px; border-radius:9px; border:none;
+                background:linear-gradient(135deg,#C62828,#B71C1C);
+                color:#fff; font-weight:700; cursor:pointer; font-size:0.88em;
+                text-transform:uppercase; letter-spacing:0.5px;
+                box-shadow:0 3px 12px rgba(198,40,40,0.35);
+            ">Gabung Sekarang</button>
+            <button onclick="document.getElementById('nickname-prompt-modal').remove()" style="
+                width:100%; margin-top:8px; padding:8px; border-radius:9px;
+                border:1.5px solid #333; background:transparent;
+                color:#666; font-weight:600; cursor:pointer; font-size:0.75em;
+            ">Batal</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Simpan callback
+    window._nicknamePromptCallback = callback;
+
+    setTimeout(() => {
+        const inp = document.getElementById('prompt-nickname-input');
+        if (inp) inp.focus();
+    }, 100);
+}
+
+function confirmNicknamePrompt() {
+    const inp = document.getElementById('prompt-nickname-input');
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (!val) { inp.style.borderColor = '#C62828'; inp.focus(); return; }
+    const sanitized = sanitizeInput(val);
+    if (!sanitized) return;
+    nickname = sanitized;
+    nicknameInput.value = sanitized;
+    localStorage.setItem('givy-tictactoe-nickname', sanitized);
+    const modal = document.getElementById('nickname-prompt-modal');
+    if (modal) modal.remove();
+    if (window._nicknamePromptCallback) {
+        const cb = window._nicknamePromptCallback;
+        window._nicknamePromptCallback = null;
+        cb();
+    }
+}
+
+
 
 function generateBoardHTML() {
     boardElement.innerHTML = '';
@@ -751,12 +830,21 @@ function doCreateRoom() {
 
 function joinRoom(id) {
     if (currentUser) {
+        // Sudah login, pakai username akun
         nickname = currentUser.username;
         nicknameInput.value = nickname;
+        doJoinRoom(id);
     } else {
+        // Tanpa akun: pastikan nickname sudah diisi
+        const raw = nicknameInput.value.trim();
+        if (!raw) {
+            // Tampilkan prompt isi nama dulu
+            showNicknamePrompt(() => doJoinRoom(id));
+            return;
+        }
         if (!saveNickname()) return;
+        doJoinRoom(id);
     }
-    doJoinRoom(id);
 }
 
 function doJoinRoom(id) {
@@ -1018,7 +1106,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (roomFromURL) {
         joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung ke ${roomFromURL}`;
         createRoomBtn.classList.add('hidden');
-        if (nickname) joinRoom(roomFromURL);
+
+        if (nickname) {
+            // Nickname sudah ada (dari localStorage atau session) — langsung join
+            joinRoom(roomFromURL);
+        } else {
+            // Nickname kosong — auto tampilkan prompt isi nama dulu
+            showNicknamePrompt(() => doJoinRoom(roomFromURL));
+        }
     } else {
         joinRoomAutoBtn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Gabung Ruangan (via tautan)`;
     }
