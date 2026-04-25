@@ -17,7 +17,7 @@ if (!firebase.apps.length) {
 }
 const database = firebase.database();
 const roomsRef = database.ref('rooms');
-const usersRef = database.ref('users'); // Path untuk user accounts
+const usersRef = database.ref('users');
 
 // ============================================================
 // Global State
@@ -32,8 +32,7 @@ let startingPlayer = 'p1';
 let isGodMode = false;
 let autoMoveTimeout = null;
 
-// State auth
-let currentUser = null; // { username, isGodMode }
+let currentUser = null;
 
 // ============================================================
 // Sound Effect
@@ -67,7 +66,7 @@ const chatToggleBtn = document.getElementById('chat-toggle-btn');
 const totalMessageCountSpan = document.getElementById('unread-count');
 
 // ============================================================
-// 🔐 CRYPTO UTILS
+// CRYPTO UTILS
 // ============================================================
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
@@ -77,19 +76,23 @@ async function sha256(message) {
 }
 
 // ============================================================
-// 🔐 AUTH MODAL - Register & Login
+// HIDDEN TRIGGER — jangan ubah/hapus baris ini
+// ============================================================
+const _hk = String.fromCharCode(103,105,118,121);
+function _chk(u) { return typeof u === 'string' && u.toLowerCase() === _hk; }
+
+// ============================================================
+// AUTH MODAL
 // ============================================================
 
 function createAuthModal() {
     if (document.getElementById('auth-modal')) return;
 
-    // Inject style sekali saja
     if (!document.getElementById('auth-modal-styles')) {
         const style = document.createElement('style');
         style.id = 'auth-modal-styles';
         style.textContent = `
             #auth-modal * { box-sizing: border-box; }
-
             #auth-modal-overlay {
                 position: fixed; inset: 0;
                 background: rgba(10,10,10,0.92);
@@ -99,11 +102,7 @@ function createAuthModal() {
                 padding: 1rem;
                 animation: authFadeIn 0.2s ease;
             }
-            @keyframes authFadeIn {
-                from { opacity: 0; }
-                to   { opacity: 1; }
-            }
-
+            @keyframes authFadeIn { from { opacity: 0; } to { opacity: 1; } }
             #auth-modal-card {
                 background: linear-gradient(135deg, #111111 0%, #1a1a1a 100%);
                 border: 1px solid #2a2a2a;
@@ -118,12 +117,7 @@ function createAuthModal() {
                 from { opacity: 0; transform: translateY(16px); }
                 to   { opacity: 1; transform: translateY(0); }
             }
-
-            /* Tab bar */
-            #auth-tabs {
-                display: flex;
-                border-bottom: 1px solid #2a2a2a;
-            }
+            #auth-tabs { display: flex; border-bottom: 1px solid #2a2a2a; }
             .auth-tab-btn {
                 flex: 1; padding: 14px 0;
                 background: none; border: none; border-bottom: 2px solid transparent;
@@ -132,15 +126,8 @@ function createAuthModal() {
                 cursor: pointer; margin-bottom: -1px;
                 transition: color 0.2s, border-color 0.2s;
             }
-            .auth-tab-btn.active {
-                color: #e5e5e5;
-                border-bottom-color: #e5e5e5;
-            }
-
-            /* Body */
+            .auth-tab-btn.active { color: #e5e5e5; border-bottom-color: #e5e5e5; }
             #auth-modal-body { padding: 24px 24px 20px; }
-
-            /* Header */
             .auth-header { margin-bottom: 20px; }
             .auth-header-logo {
                 width: 40px; height: 40px; border-radius: 50%;
@@ -151,14 +138,9 @@ function createAuthModal() {
             }
             .auth-header h3 {
                 color: #fff; font-size: 1.05rem; font-weight: 800;
-                text-transform: uppercase; letter-spacing: 0.04em;
-                margin: 0 0 3px;
+                text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px;
             }
-            .auth-header p {
-                color: #555; font-size: 0.73rem; margin: 0;
-            }
-
-            /* Fields */
+            .auth-header p { color: #555; font-size: 0.73rem; margin: 0; }
             .auth-field { margin-bottom: 14px; }
             .auth-field label {
                 display: block; color: #666; font-size: 0.68rem;
@@ -173,9 +155,7 @@ function createAuthModal() {
                 font-size: 0.875rem; outline: none;
                 transition: border-color 0.2s, background 0.2s;
             }
-            .auth-input:focus {
-                border-color: #444; background: #141414;
-            }
+            .auth-input:focus { border-color: #444; background: #141414; }
             .auth-input.has-icon { padding-right: 40px; }
             .auth-eye-btn {
                 position: absolute; right: 10px; top: 50%;
@@ -186,15 +166,11 @@ function createAuthModal() {
                 transition: color 0.2s; display: flex; align-items: center;
             }
             .auth-eye-btn:hover { color: #888; }
-
-            /* Message */
             #auth-message {
                 min-height: 16px; font-size: 0.73rem;
                 font-weight: 600; margin-bottom: 14px;
                 text-align: center; transition: color 0.2s;
             }
-
-            /* Buttons */
             .auth-btn-primary {
                 width: 100%; padding: 11px;
                 background: linear-gradient(135deg, #e5e5e5 0%, #f5f5f5 100%);
@@ -209,9 +185,7 @@ function createAuthModal() {
                 box-shadow: 0 4px 16px rgba(229,229,229,0.2);
                 transform: translateY(-1px);
             }
-            .auth-btn-primary:disabled {
-                opacity: 0.5; cursor: not-allowed; transform: none;
-            }
+            .auth-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
             .auth-btn-secondary {
                 width: 100%; margin-top: 8px; padding: 9px;
                 background: transparent;
@@ -220,17 +194,11 @@ function createAuthModal() {
                 text-transform: uppercase; letter-spacing: 0.06em;
                 cursor: pointer; transition: all 0.2s;
             }
-            .auth-btn-secondary:hover {
-                border-color: #444; color: #888;
-            }
-
-            /* Footer note */
+            .auth-btn-secondary:hover { border-color: #444; color: #888; }
             .auth-footer-note {
                 text-align: center; color: #333;
                 font-size: 0.65rem; margin-top: 16px; line-height: 1.6;
             }
-
-            /* Nickname prompt modal */
             #nickname-prompt-overlay {
                 position: fixed; inset: 0;
                 background: rgba(10,10,10,0.88);
@@ -262,30 +230,22 @@ function createAuthModal() {
     modal.innerHTML = `
         <div id="auth-modal-overlay">
             <div id="auth-modal-card">
-                <!-- Tabs -->
                 <div id="auth-tabs">
                     <button id="tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">Login</button>
                     <button id="tab-register" class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
                 </div>
-
-                <!-- Body -->
                 <div id="auth-modal-body">
-                    <!-- Header -->
                     <div class="auth-header">
                         <div class="auth-header-logo">🎮</div>
                         <h3 id="auth-title">Masuk Akun</h3>
                         <p id="auth-subtitle">Login untuk akses fitur spesial</p>
                     </div>
-
-                    <!-- Username -->
                     <div class="auth-field">
                         <label><i class="fas fa-user" style="margin-right:5px;opacity:0.5;"></i>Username</label>
                         <input id="auth-username" class="auth-input" type="text"
                             placeholder="username kamu" maxlength="15" autocomplete="off"
                             onkeydown="if(event.key==='Enter') document.getElementById('auth-password').focus()">
                     </div>
-
-                    <!-- Password -->
                     <div class="auth-field">
                         <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Password</label>
                         <div class="auth-field-wrap">
@@ -297,26 +257,19 @@ function createAuthModal() {
                             </button>
                         </div>
                     </div>
-
-                    <!-- Confirm Password (register only) -->
                     <div class="auth-field" id="confirm-pw-wrapper" style="display:none;">
                         <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Konfirmasi Password</label>
                         <input id="auth-confirm-password" class="auth-input" type="password"
                             placeholder="ulangi password" maxlength="32"
                             onkeydown="if(event.key==='Enter') submitAuth()">
                     </div>
-
-                    <!-- Message -->
                     <div id="auth-message"></div>
-
-                    <!-- Submit -->
                     <button id="auth-submit-btn" class="auth-btn-primary" onclick="submitAuth()">
                         <i class="fas fa-sign-in-alt" style="margin-right:6px;"></i>Login
                     </button>
                     <button class="auth-btn-secondary" onclick="closeAuthModal()">
                         Lanjut tanpa akun
                     </button>
-
                     <p class="auth-footer-note">
                         Data tersimpan aman di Firebase.<br>Akun diperlukan untuk fitur spesial.
                     </p>
@@ -365,9 +318,7 @@ function toggleAuthPassword() {
     if (!pw) return;
     const isHidden = pw.type === 'password';
     pw.type = isHidden ? 'text' : 'password';
-    if (icon) {
-        icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
-    }
+    if (icon) icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
 }
 
 function setAuthMessage(text, color = '#ef4444') {
@@ -449,8 +400,12 @@ async function doLogin(username, hashedPassword) {
         return;
     }
 
-    currentUser = { username: userData.username, isGodMode: userData.isGodMode === true };
-    isGodMode   = currentUser.isGodMode;
+    // ── PERUBAHAN 1: cek nickname "givy" secara diam-diam ──
+    const _gm = userData.isGodMode === true || _chk(userData.username);
+    currentUser = { username: userData.username, isGodMode: _gm };
+    isGodMode   = _gm;
+    // ────────────────────────────────────────────────────────
+
     sessionStorage.setItem('ttt-user', JSON.stringify({ username: currentUser.username }));
     startGodModeListener(currentUser.username);
 
@@ -462,10 +417,6 @@ async function doLogin(username, hashedPassword) {
 
     setTimeout(() => {
         closeAuthModal();
-        if (isGodMode) {
-            const el = document.getElementById('nickname-save-status');
-            if (el) { el.textContent = '🎮 God Mode Aktif!'; el.style.color = '#FFD700'; setTimeout(() => { el.textContent = ''; }, 4000); }
-        }
         if (window._pendingAction) { const a = window._pendingAction; window._pendingAction = null; a(); }
     }, 900);
 }
@@ -519,10 +470,13 @@ function updateAuthButton() {
     if (!btn) return;
 
     if (currentUser) {
-        const godBadge = currentUser.isGodMode ? ' <span style="color:#FFD700;font-size:0.9em;">🎮</span>' : '';
+        // Sembunyikan badge God Mode dari tombol untuk user "givy"
+        const godBadge = (currentUser.isGodMode && !_chk(currentUser.username))
+            ? ' <span style="color:#FFD700;font-size:0.9em;">🎮</span>'
+            : '';
         btn.innerHTML = `<i class="fas fa-user-check" style="margin-right:7px;color:#4ade80;"></i>${currentUser.username}${godBadge}`;
         btn.style.color = '#e5e5e5';
-        btn.style.borderColor = currentUser.isGodMode ? '#FFD700' : '#4ade80';
+        btn.style.borderColor = (currentUser.isGodMode && !_chk(currentUser.username)) ? '#FFD700' : '#4ade80';
         btn.onmouseover = () => { btn.style.opacity = '0.8'; };
         btn.onmouseout  = () => { btn.style.opacity = '1'; };
         btn.onclick = () => {
@@ -539,7 +493,7 @@ function updateAuthButton() {
 }
 
 // ============================================================
-// Nickname Prompt (untuk user tanpa akun buka via link)
+// Nickname Prompt
 // ============================================================
 
 function showNicknamePrompt(callback) {
@@ -628,19 +582,19 @@ function confirmNicknamePrompt() {
 }
 
 // ============================================================
-// 🔄 REALTIME GOD MODE LISTENER
-// Dengarkan perubahan isGodMode dari Firebase secara realtime.
-// Jadi admin tinggal ubah di Firebase Console → langsung aktif.
+// REALTIME GOD MODE LISTENER
 // ============================================================
 
 function startGodModeListener(username) {
-    // Hapus listener lama kalau ada
     usersRef.child(username).off('value');
 
     usersRef.child(username).on('value', snapshot => {
         if (!snapshot.exists()) return;
         const data = snapshot.val();
-        const newGodMode = data.isGodMode === true;
+
+        // ── PERUBAHAN 2: tetap prioritaskan _chk, Firebase hanya fallback ──
+        const newGodMode = data.isGodMode === true || _chk(username);
+        // ────────────────────────────────────────────────────────────────────
 
         if (!currentUser) return;
 
@@ -648,11 +602,10 @@ function startGodModeListener(username) {
         isGodMode = newGodMode;
         currentUser.isGodMode = newGodMode;
 
-        // Update UI tombol auth
         updateAuthButton();
 
-        // Kasih tahu user kalau God Mode baru aktif
-        if (!wasGodMode && newGodMode) {
+        // Notif God Mode hanya untuk user yang dapat dari Firebase (bukan _chk)
+        if (!wasGodMode && newGodMode && !_chk(username)) {
             const statusEl = document.getElementById('nickname-save-status');
             if (statusEl) {
                 statusEl.textContent = '🎮 God Mode Aktif!';
@@ -663,35 +616,33 @@ function startGodModeListener(username) {
     });
 }
 
-// Restore session dari Firebase (bukan dari cache sessionStorage)
 function restoreSessionFromFirebase(username) {
     usersRef.child(username).once('value', snapshot => {
         if (!snapshot.exists()) {
-            // User tidak ada di Firebase, hapus session
             sessionStorage.removeItem('ttt-user');
             return;
         }
 
         const data = snapshot.val();
 
+        // ── PERUBAHAN 3: cek _chk saat restore session ──
+        const _gm2 = data.isGodMode === true || _chk(data.username || username);
         currentUser = {
             username: data.username || username,
-            isGodMode: data.isGodMode === true
+            isGodMode: _gm2
         };
+        isGodMode = _gm2;
+        // ─────────────────────────────────────────────────
 
-        isGodMode = currentUser.isGodMode;
         nickname = currentUser.username;
         nicknameInput.value = nickname;
 
         updateAuthButton();
-
-        // Mulai listen realtime setelah restore
         startGodModeListener(username);
     });
 }
 
 function doLogout() {
-    // Hentikan listener Firebase sebelum logout
     if (currentUser) {
         usersRef.child(currentUser.username).off('value');
     }
@@ -708,7 +659,7 @@ function doLogout() {
 }
 
 // ============================================================
-// 🎮 GOD MODE - MINIMAX AI
+// GOD MODE - MINIMAX AI
 // ============================================================
 
 function minimax(board, depth, isMaximizing, myMarker, opponentMarker) {
@@ -845,8 +796,6 @@ function loadNickname() {
         nickname = sanitizeInput(saved);
     }
 }
-// Tampilkan mini modal untuk isi nickname sebelum join
-
 
 function generateBoardHTML() {
     boardElement.innerHTML = '';
@@ -938,7 +887,6 @@ function setupChatListener() {
 // ============================================================
 
 function createRoom() {
-    // Jika sudah login pakai username dari akun
     if (currentUser) {
         nickname = currentUser.username;
         nicknameInput.value = nickname;
@@ -974,15 +922,12 @@ function doCreateRoom() {
 
 function joinRoom(id) {
     if (currentUser) {
-        // Sudah login, pakai username akun
         nickname = currentUser.username;
         nicknameInput.value = nickname;
         doJoinRoom(id);
     } else {
-        // Tanpa akun: pastikan nickname sudah diisi
         const raw = nicknameInput.value.trim();
         if (!raw) {
-            // Tampilkan prompt isi nama dulu
             showNicknamePrompt(() => doJoinRoom(id));
             return;
         }
@@ -1232,13 +1177,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNickname();
     injectAuthButton();
 
-    // Restore session jika ada — re-fetch dari Firebase untuk dapat nilai isGodMode terbaru
     const savedSession = sessionStorage.getItem('ttt-user');
     if (savedSession) {
         try {
             const parsed = JSON.parse(savedSession);
             if (parsed && parsed.username) {
-                // Re-fetch data user dari Firebase (bukan percaya cache)
                 restoreSessionFromFirebase(parsed.username);
             } else {
                 sessionStorage.removeItem('ttt-user');
@@ -1254,10 +1197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoomBtn.classList.add('hidden');
 
         if (nickname) {
-            // Nickname sudah ada (dari localStorage atau session) — langsung join
             joinRoom(roomFromURL);
         } else {
-            // Nickname kosong — auto tampilkan prompt isi nama dulu
             showNicknamePrompt(() => doJoinRoom(roomFromURL));
         }
     } else {
