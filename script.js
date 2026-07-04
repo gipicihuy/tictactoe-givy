@@ -82,6 +82,7 @@ function createAuthModal() {
             }
             @keyframes authFadeIn { from { opacity: 0; } to { opacity: 1; } }
             #auth-modal-card {
+                position: relative;
                 background: #2c2a2a;
                 border: 1.5px solid rgba(153,153,153,0.25);
                 border-radius: 0.7rem;
@@ -95,6 +96,15 @@ function createAuthModal() {
                 from { opacity: 0; transform: translateY(16px); }
                 to   { opacity: 1; transform: translateY(0); }
             }
+            #auth-modal-close {
+                position: absolute; top: 10px; right: 10px; z-index: 2;
+                width: 28px; height: 28px; border-radius: 50%;
+                background: transparent; border: none;
+                color: #7a7e85; cursor: pointer;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 0.85rem; transition: color 0.2s, background 0.2s;
+            }
+            #auth-modal-close:hover { color: #fabf00; background: rgba(255,255,255,0.06); }
             #auth-tabs { display: flex; border-bottom: 1.5px solid rgba(153,153,153,0.25); }
             .auth-tab-btn {
                 flex: 1; padding: 14px 0;
@@ -105,14 +115,13 @@ function createAuthModal() {
                 transition: color 0.2s, border-color 0.2s;
             }
             .auth-tab-btn.active { color: #fabf00; border-bottom-color: #fabf00; }
-            #auth-modal-body { padding: 24px 24px 20px; }
-            .auth-header { margin-bottom: 20px; }
+            #auth-modal-body { padding: 28px 24px 24px; }
+            .auth-header { margin-bottom: 22px; text-align: center; }
             .auth-header-logo {
-                width: 40px; height: 40px; border-radius: 50%;
+                width: 44px; height: 44px; border-radius: 50%;
                 background: #fabf00;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 1.1rem; margin-bottom: 12px;
-                box-shadow: 0 4px 14px rgba(250,191,0,0.35);
+                font-size: 1.05rem; color: #1a1a1a; margin: 0 auto 12px;
             }
             .auth-header h3 {
                 color: #fff; font-size: 1.05rem; font-weight: 700;
@@ -125,23 +134,28 @@ function createAuthModal() {
                 font-weight: 700; text-transform: uppercase;
                 letter-spacing: 0.06em; margin-bottom: 6px;
             }
-            .auth-field-wrap { position: relative; }
+            .auth-field-wrap { position: relative; display: flex; align-items: center; }
+            .auth-field-icon {
+                position: absolute; left: 13px;
+                color: #6a6d73; font-size: 0.8rem; pointer-events: none;
+            }
             .auth-input {
-                width: 100%; padding: 10px 12px;
+                width: 100%; padding: 11px 12px 11px 36px;
                 background: #1e2025; border: 1.5px solid rgba(153,153,153,0.25);
                 border-radius: 0.4rem; color: #f2f2f2;
                 font-size: 0.875rem; outline: none;
                 transition: border-color 0.2s;
             }
             .auth-input:focus { border-color: #fabf00; }
-            .auth-input.has-icon { padding-right: 40px; }
+            .auth-input.has-right-icon { padding-right: 40px; }
             .auth-eye-btn {
-                position: absolute; right: 10px; top: 50%;
-                transform: translateY(-50%);
+                position: absolute; right: 6px;
+                width: 30px; height: 30px;
                 background: none; border: none;
                 color: #6a6d73; cursor: pointer;
-                font-size: 0.8rem; padding: 4px;
-                transition: color 0.2s; display: flex; align-items: center;
+                font-size: 0.8rem;
+                display: flex; align-items: center; justify-content: center;
+                transition: color 0.2s;
             }
             .auth-eye-btn:hover { color: #fabf00; }
             #auth-message {
@@ -170,10 +184,6 @@ function createAuthModal() {
                 cursor: pointer; transition: all 0.2s;
             }
             .auth-btn-secondary:hover { border-color: #fabf00; color: #fabf00; }
-            .auth-footer-note {
-                text-align: center; color: #55585e;
-                font-size: 0.65rem; margin-top: 16px; line-height: 1.6;
-            }
             #nickname-prompt-overlay {
                 position: fixed; inset: 0;
                 background: rgba(10,10,10,0.88);
@@ -205,27 +215,34 @@ function createAuthModal() {
     modal.innerHTML = `
         <div id="auth-modal-overlay">
             <div id="auth-modal-card">
+                <button id="auth-modal-close" onclick="closeAuthModal()" type="button" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
                 <div id="auth-tabs">
                     <button id="tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">Login</button>
                     <button id="tab-register" class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
                 </div>
                 <div id="auth-modal-body">
                     <div class="auth-header">
-                        <div class="auth-header-logo">🎮</div>
+                        <div class="auth-header-logo"><i class="fas fa-user-shield"></i></div>
                         <h3 id="auth-title">Masuk Akun</h3>
                         <p id="auth-subtitle">Login untuk akses fitur spesial</p>
                     </div>
                     <div class="auth-field">
-                        <label><i class="fas fa-user" style="margin-right:5px;opacity:0.5;"></i>Username</label>
-                        <input id="auth-username" class="auth-input" type="text"
-                            placeholder="username kamu" maxlength="15" autocomplete="off"
-                            onkeydown="if(event.key==='Enter') document.getElementById('auth-password').focus()">
+                        <label>Username</label>
+                        <div class="auth-field-wrap">
+                            <i class="fas fa-user auth-field-icon"></i>
+                            <input id="auth-username" class="auth-input" type="text"
+                                placeholder="Username kamu" maxlength="15" autocomplete="off"
+                                onkeydown="if(event.key==='Enter') document.getElementById('auth-password').focus()">
+                        </div>
                     </div>
                     <div class="auth-field">
-                        <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Password</label>
+                        <label>Password</label>
                         <div class="auth-field-wrap">
-                            <input id="auth-password" class="auth-input has-icon" type="password"
-                                placeholder="••••••••" maxlength="32"
+                            <i class="fas fa-lock auth-field-icon"></i>
+                            <input id="auth-password" class="auth-input has-right-icon" type="password"
+                                placeholder="Kata sandi" maxlength="32"
                                 onkeydown="if(event.key==='Enter') submitAuth()">
                             <button class="auth-eye-btn" onclick="toggleAuthPassword()" type="button" tabindex="-1">
                                 <i id="auth-eye-icon" class="fas fa-eye"></i>
@@ -233,10 +250,13 @@ function createAuthModal() {
                         </div>
                     </div>
                     <div class="auth-field" id="confirm-pw-wrapper" style="display:none;">
-                        <label><i class="fas fa-lock" style="margin-right:5px;opacity:0.5;"></i>Konfirmasi Password</label>
-                        <input id="auth-confirm-password" class="auth-input" type="password"
-                            placeholder="ulangi password" maxlength="32"
-                            onkeydown="if(event.key==='Enter') submitAuth()">
+                        <label>Konfirmasi Password</label>
+                        <div class="auth-field-wrap">
+                            <i class="fas fa-lock auth-field-icon"></i>
+                            <input id="auth-confirm-password" class="auth-input" type="password"
+                                placeholder="Ulangi kata sandi" maxlength="32"
+                                onkeydown="if(event.key==='Enter') submitAuth()">
+                        </div>
                     </div>
                     <div id="auth-message"></div>
                     <button id="auth-submit-btn" class="auth-btn-primary" onclick="submitAuth()">
@@ -245,9 +265,6 @@ function createAuthModal() {
                     <button class="auth-btn-secondary" onclick="closeAuthModal()">
                         Lanjut tanpa akun
                     </button>
-                    <p class="auth-footer-note">
-                        Data tersimpan aman di Firebase.<br>Akun diperlukan untuk fitur spesial.
-                    </p>
                 </div>
             </div>
         </div>
