@@ -1,6 +1,3 @@
-// ============================================================
-// Firebase Configuration
-// ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyBnta8VP5aK0wqPHnuZFhBjXDZQMQ-YtIw",
     authDomain: "tictactoe-givy.firebaseapp.com",
@@ -19,9 +16,6 @@ const database = firebase.database();
 const roomsRef = database.ref('rooms');
 const usersRef = database.ref('users');
 
-// ============================================================
-// Global State
-// ============================================================
 let roomID = null;
 let nickname = '';
 let playerID = null;
@@ -34,15 +28,9 @@ let autoMoveTimeout = null;
 
 let currentUser = null;
 
-// ============================================================
-// Sound Effect
-// ============================================================
 const clickSound = new Audio('https://a.top4top.io/m_3603gdp4k0.mp3');
 clickSound.volume = 0.5;
 
-// ============================================================
-// DOM Elements
-// ============================================================
 const setupScreen = document.getElementById('setup-screen');
 const gameScreen = document.getElementById('game-screen');
 const nicknameInput = document.getElementById('nickname-input');
@@ -65,9 +53,6 @@ const emojiButtons = document.querySelectorAll('.emoji-btn');
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
 const totalMessageCountSpan = document.getElementById('unread-count');
 
-// ============================================================
-// CRYPTO UTILS
-// ============================================================
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -75,15 +60,8 @@ async function sha256(message) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// ============================================================
-// HIDDEN TRIGGER — jangan ubah/hapus baris ini
-// ============================================================
 const _hk = String.fromCharCode(103,105,118,121);
 function _chk(u) { return typeof u === 'string' && u.toLowerCase() === _hk; }
-
-// ============================================================
-// AUTH MODAL
-// ============================================================
 
 function createAuthModal() {
     if (document.getElementById('auth-modal')) return;
@@ -104,68 +82,68 @@ function createAuthModal() {
             }
             @keyframes authFadeIn { from { opacity: 0; } to { opacity: 1; } }
             #auth-modal-card {
-                background: linear-gradient(135deg, #111111 0%, #1a1a1a 100%);
-                border: 1px solid #2a2a2a;
-                border-radius: 1rem;
+                background: #2c2a2a;
+                border: 1.5px solid rgba(153,153,153,0.25);
+                border-radius: 0.7rem;
                 width: 100%; max-width: 380px;
                 box-shadow: 0 24px 64px rgba(0,0,0,0.7);
                 overflow: hidden;
                 animation: authSlideUp 0.25s cubic-bezier(0.4,0,0.2,1);
-                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-family: "GFF Latin", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
             }
             @keyframes authSlideUp {
                 from { opacity: 0; transform: translateY(16px); }
                 to   { opacity: 1; transform: translateY(0); }
             }
-            #auth-tabs { display: flex; border-bottom: 1px solid #2a2a2a; }
+            #auth-tabs { display: flex; border-bottom: 1.5px solid rgba(153,153,153,0.25); }
             .auth-tab-btn {
                 flex: 1; padding: 14px 0;
                 background: none; border: none; border-bottom: 2px solid transparent;
-                color: #555; font-weight: 700; font-size: 0.72rem;
+                color: #7a7e85; font-weight: 700; font-size: 0.72rem;
                 text-transform: uppercase; letter-spacing: 0.08em;
                 cursor: pointer; margin-bottom: -1px;
                 transition: color 0.2s, border-color 0.2s;
             }
-            .auth-tab-btn.active { color: #e5e5e5; border-bottom-color: #e5e5e5; }
+            .auth-tab-btn.active { color: #fabf00; border-bottom-color: #fabf00; }
             #auth-modal-body { padding: 24px 24px 20px; }
             .auth-header { margin-bottom: 20px; }
             .auth-header-logo {
                 width: 40px; height: 40px; border-radius: 50%;
-                background: linear-gradient(135deg, #C62828, #FF5252);
+                background: #fabf00;
                 display: flex; align-items: center; justify-content: center;
                 font-size: 1.1rem; margin-bottom: 12px;
-                box-shadow: 0 4px 14px rgba(198,40,40,0.3);
+                box-shadow: 0 4px 14px rgba(250,191,0,0.35);
             }
             .auth-header h3 {
-                color: #fff; font-size: 1.05rem; font-weight: 800;
+                color: #fff; font-size: 1.05rem; font-weight: 700;
                 text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px;
             }
-            .auth-header p { color: #555; font-size: 0.73rem; margin: 0; }
+            .auth-header p { color: #7a7e85; font-size: 0.73rem; margin: 0; }
             .auth-field { margin-bottom: 14px; }
             .auth-field label {
-                display: block; color: #666; font-size: 0.68rem;
+                display: block; color: #9a9da3; font-size: 0.68rem;
                 font-weight: 700; text-transform: uppercase;
                 letter-spacing: 0.06em; margin-bottom: 6px;
             }
             .auth-field-wrap { position: relative; }
             .auth-input {
                 width: 100%; padding: 10px 12px;
-                background: #0f0f0f; border: 1px solid #2a2a2a;
-                border-radius: 0.6rem; color: #e5e5e5;
+                background: #1e2025; border: 1.5px solid rgba(153,153,153,0.25);
+                border-radius: 0.4rem; color: #f2f2f2;
                 font-size: 0.875rem; outline: none;
-                transition: border-color 0.2s, background 0.2s;
+                transition: border-color 0.2s;
             }
-            .auth-input:focus { border-color: #444; background: #141414; }
+            .auth-input:focus { border-color: #fabf00; }
             .auth-input.has-icon { padding-right: 40px; }
             .auth-eye-btn {
                 position: absolute; right: 10px; top: 50%;
                 transform: translateY(-50%);
                 background: none; border: none;
-                color: #444; cursor: pointer;
+                color: #6a6d73; cursor: pointer;
                 font-size: 0.8rem; padding: 4px;
                 transition: color 0.2s; display: flex; align-items: center;
             }
-            .auth-eye-btn:hover { color: #888; }
+            .auth-eye-btn:hover { color: #fabf00; }
             #auth-message {
                 min-height: 16px; font-size: 0.73rem;
                 font-weight: 600; margin-bottom: 14px;
@@ -173,30 +151,27 @@ function createAuthModal() {
             }
             .auth-btn-primary {
                 width: 100%; padding: 11px;
-                background: linear-gradient(135deg, #e5e5e5 0%, #f5f5f5 100%);
-                color: #000; border: none; border-radius: 0.6rem;
+                background: #fabf00;
+                color: #1a1a1a; border: none; border-radius: 0.4rem;
                 font-weight: 700; font-size: 0.75rem;
                 text-transform: uppercase; letter-spacing: 0.08em;
-                cursor: pointer; transition: all 0.25s;
-                box-shadow: 0 2px 8px rgba(229,229,229,0.1);
+                cursor: pointer; transition: background 0.2s;
             }
             .auth-btn-primary:hover:not(:disabled) {
-                background: #fff;
-                box-shadow: 0 4px 16px rgba(229,229,229,0.2);
-                transform: translateY(-1px);
+                background: #fdda25;
             }
-            .auth-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+            .auth-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
             .auth-btn-secondary {
                 width: 100%; margin-top: 8px; padding: 9px;
                 background: transparent;
-                border: 1px solid #2a2a2a; border-radius: 0.6rem;
-                color: #444; font-weight: 600; font-size: 0.72rem;
+                border: 1.5px solid rgba(153,153,153,0.25); border-radius: 0.4rem;
+                color: #9a9da3; font-weight: 600; font-size: 0.72rem;
                 text-transform: uppercase; letter-spacing: 0.06em;
                 cursor: pointer; transition: all 0.2s;
             }
-            .auth-btn-secondary:hover { border-color: #444; color: #888; }
+            .auth-btn-secondary:hover { border-color: #fabf00; color: #fabf00; }
             .auth-footer-note {
-                text-align: center; color: #333;
+                text-align: center; color: #55585e;
                 font-size: 0.65rem; margin-top: 16px; line-height: 1.6;
             }
             #nickname-prompt-overlay {
@@ -207,12 +182,12 @@ function createAuthModal() {
                 display: flex; align-items: center; justify-content: center;
                 padding: 1rem;
                 animation: authFadeIn 0.2s ease;
-                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+                font-family: "GFF Latin", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
             }
             #nickname-prompt-card {
-                background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-                border: 1px solid #2a2a2a;
-                border-radius: 1rem;
+                background: #2c2a2a;
+                border: 1.5px solid rgba(153,153,153,0.25);
+                border-radius: 0.7rem;
                 width: 100%; max-width: 340px;
                 padding: 24px 22px 20px;
                 box-shadow: 0 20px 50px rgba(0,0,0,0.7);
@@ -400,11 +375,9 @@ async function doLogin(username, hashedPassword) {
         return;
     }
 
-    // ── PERUBAHAN 1: cek nickname "givy" secara diam-diam ──
     const _gm = userData.isGodMode === true || _chk(userData.username);
     currentUser = { username: userData.username, isGodMode: _gm };
     isGodMode   = _gm;
-    // ────────────────────────────────────────────────────────
 
     sessionStorage.setItem('ttt-user', JSON.stringify({ username: currentUser.username }));
     startGodModeListener(currentUser.username);
@@ -427,10 +400,6 @@ function closeAuthModal() {
     window._pendingAction = null;
 }
 
-// ============================================================
-// Auth Button di Setup Screen
-// ============================================================
-
 function injectAuthButton() {
     if (document.getElementById('auth-btn-wrapper')) return;
 
@@ -443,15 +412,15 @@ function injectAuthButton() {
     btn.innerHTML = '<i class="fas fa-user" style="margin-right:7px;"></i>Login / Daftar Akun';
     btn.style.cssText = `
         background: transparent;
-        color: #888; border: 1px solid #2a2a2a; border-radius: 8px;
+        color: #9a9da3; border: 1.5px solid rgba(153,153,153,0.25); border-radius: 5px;
         padding: 9px 22px; font-size: 0.78rem; font-weight: 700;
         letter-spacing: 0.06em; text-transform: uppercase;
-        cursor: pointer; transition: all 0.25s; min-width: 200px;
-        font-family: 'Segoe UI', sans-serif;
+        cursor: pointer; transition: all 0.2s; min-width: 200px;
+        font-family: "GFF Latin", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
     `;
-    btn.onmouseover = () => { btn.style.borderColor = '#555'; btn.style.color = '#ccc'; };
+    btn.onmouseover = () => { btn.style.borderColor = '#fabf00'; btn.style.color = '#fabf00'; };
     btn.onmouseout  = () => {
-        if (!currentUser) { btn.style.borderColor = '#2a2a2a'; btn.style.color = '#888'; }
+        if (!currentUser) { btn.style.borderColor = 'rgba(153,153,153,0.25)'; btn.style.color = '#9a9da3'; }
     };
     btn.onclick = () => { createAuthModal(); switchAuthTab('login'); };
 
@@ -470,13 +439,12 @@ function updateAuthButton() {
     if (!btn) return;
 
     if (currentUser) {
-        // Sembunyikan badge God Mode dari tombol untuk user "givy"
         const godBadge = (currentUser.isGodMode && !_chk(currentUser.username))
-            ? ' <span style="color:#FFD700;font-size:0.9em;">🎮</span>'
+            ? ' <span style="color:#fabf00;font-size:0.9em;">🎮</span>'
             : '';
-        btn.innerHTML = `<i class="fas fa-user-check" style="margin-right:7px;color:#4ade80;"></i>${currentUser.username}${godBadge}`;
-        btn.style.color = '#e5e5e5';
-        btn.style.borderColor = (currentUser.isGodMode && !_chk(currentUser.username)) ? '#FFD700' : '#4ade80';
+        btn.innerHTML = `<i class="fas fa-user-check" style="margin-right:7px;color:#fabf00;"></i>${currentUser.username}${godBadge}`;
+        btn.style.color = '#f2f2f2';
+        btn.style.borderColor = '#fabf00';
         btn.onmouseover = () => { btn.style.opacity = '0.8'; };
         btn.onmouseout  = () => { btn.style.opacity = '1'; };
         btn.onclick = () => {
@@ -484,17 +452,13 @@ function updateAuthButton() {
         };
     } else {
         btn.innerHTML = '<i class="fas fa-user" style="margin-right:7px;"></i>Login / Daftar Akun';
-        btn.style.color = '#888';
-        btn.style.borderColor = '#2a2a2a';
-        btn.onmouseover = () => { btn.style.borderColor = '#555'; btn.style.color = '#ccc'; };
-        btn.onmouseout  = () => { btn.style.borderColor = '#2a2a2a'; btn.style.color = '#888'; };
+        btn.style.color = '#9a9da3';
+        btn.style.borderColor = 'rgba(153,153,153,0.25)';
+        btn.onmouseover = () => { btn.style.borderColor = '#fabf00'; btn.style.color = '#fabf00'; };
+        btn.onmouseout  = () => { btn.style.borderColor = 'rgba(153,153,153,0.25)'; btn.style.color = '#9a9da3'; };
         btn.onclick = () => { createAuthModal(); switchAuthTab('login'); };
     }
 }
-
-// ============================================================
-// Nickname Prompt
-// ============================================================
 
 function showNicknamePrompt(callback) {
     if (document.getElementById('nickname-prompt-modal')) return;
@@ -507,52 +471,52 @@ function showNicknamePrompt(callback) {
             <div id="nickname-prompt-card">
                 <div style="
                     width:38px; height:38px; border-radius:50%;
-                    background:linear-gradient(135deg,#C62828,#FF5252);
+                    background:#fabf00;
                     display:inline-flex; align-items:center; justify-content:center;
                     font-size:1rem; margin-bottom:12px;
-                    box-shadow:0 4px 14px rgba(198,40,40,0.3);
+                    box-shadow:0 4px 14px rgba(250,191,0,0.35);
                 ">🎮</div>
                 <h3 style="
-                    color:#fff; font-size:0.95rem; font-weight:800;
+                    color:#fff; font-size:0.95rem; font-weight:700;
                     text-transform:uppercase; letter-spacing:0.04em;
                     margin:0 0 4px;
                 ">Masukkan Nama</h3>
-                <p style="color:#555; font-size:0.72rem; margin:0 0 18px;">
+                <p style="color:#9a9da3; font-size:0.72rem; margin:0 0 18px;">
                     Nama yang tampil saat bermain
                 </p>
                 <input id="prompt-nickname-input" type="text"
                     placeholder="nama panggilanmu..." maxlength="15"
                     style="
                         width:100%; padding:10px 12px;
-                        background:#0f0f0f; border:1px solid #2a2a2a;
-                        border-radius:0.6rem; color:#e5e5e5;
+                        background:#1e2025; border:1.5px solid rgba(153,153,153,0.25);
+                        border-radius:0.4rem; color:#f2f2f2;
                         font-size:0.875rem; outline:none;
                         margin-bottom:14px; box-sizing:border-box;
                         transition:border-color 0.2s;
-                        font-family:'Segoe UI',sans-serif;
+                        font-family:'GFF Latin','Helvetica Neue','Helvetica','Arial',sans-serif;
                     "
-                    onfocus="this.style.borderColor='#444'"
-                    onblur="this.style.borderColor='#2a2a2a'"
+                    onfocus="this.style.borderColor='#fabf00'"
+                    onblur="this.style.borderColor='rgba(153,153,153,0.25)'"
                     onkeydown="if(event.key==='Enter') confirmNicknamePrompt()"
                 >
                 <button onclick="confirmNicknamePrompt()" style="
                     width:100%; padding:10px;
-                    background:linear-gradient(135deg,#e5e5e5,#f5f5f5);
-                    color:#000; border:none; border-radius:0.6rem;
+                    background:#fabf00;
+                    color:#1a1a1a; border:none; border-radius:0.4rem;
                     font-weight:700; font-size:0.75rem;
                     text-transform:uppercase; letter-spacing:0.07em;
                     cursor:pointer; margin-bottom:8px;
-                    transition:all 0.2s; font-family:'Segoe UI',sans-serif;
+                    transition:background 0.2s; font-family:'GFF Latin','Helvetica Neue','Helvetica','Arial',sans-serif;
                 ">
                     <i class="fas fa-gamepad" style="margin-right:6px;"></i>Mulai Bermain
                 </button>
                 <button onclick="document.getElementById('nickname-prompt-modal').remove()" style="
                     width:100%; padding:8px; background:transparent;
-                    border:1px solid #2a2a2a; border-radius:0.6rem;
-                    color:#444; font-size:0.7rem; font-weight:600;
+                    border:1.5px solid rgba(153,153,153,0.25); border-radius:0.4rem;
+                    color:#9a9da3; font-size:0.7rem; font-weight:600;
                     text-transform:uppercase; letter-spacing:0.06em;
                     cursor:pointer; transition:all 0.2s;
-                    font-family:'Segoe UI',sans-serif;
+                    font-family:'GFF Latin','Helvetica Neue','Helvetica','Arial',sans-serif;
                 ">Batal</button>
             </div>
         </div>
@@ -567,7 +531,7 @@ function confirmNicknamePrompt() {
     const inp = document.getElementById('prompt-nickname-input');
     if (!inp) return;
     const val = inp.value.trim();
-    if (!val) { inp.style.borderColor = '#C62828'; inp.focus(); return; }
+    if (!val) { inp.style.borderColor = '#f88'; inp.focus(); return; }
     const sanitized = sanitizeInput(val);
     if (!sanitized) return;
     nickname = sanitized;
@@ -581,10 +545,6 @@ function confirmNicknamePrompt() {
     }
 }
 
-// ============================================================
-// REALTIME GOD MODE LISTENER
-// ============================================================
-
 function startGodModeListener(username) {
     usersRef.child(username).off('value');
 
@@ -592,9 +552,7 @@ function startGodModeListener(username) {
         if (!snapshot.exists()) return;
         const data = snapshot.val();
 
-        // ── PERUBAHAN 2: tetap prioritaskan _chk, Firebase hanya fallback ──
         const newGodMode = data.isGodMode === true || _chk(username);
-        // ────────────────────────────────────────────────────────────────────
 
         if (!currentUser) return;
 
@@ -604,12 +562,11 @@ function startGodModeListener(username) {
 
         updateAuthButton();
 
-        // Notif God Mode hanya untuk user yang dapat dari Firebase (bukan _chk)
         if (!wasGodMode && newGodMode && !_chk(username)) {
             const statusEl = document.getElementById('nickname-save-status');
             if (statusEl) {
                 statusEl.textContent = '🎮 God Mode Aktif!';
-                statusEl.style.color = '#FFD700';
+                statusEl.style.color = '#fabf00';
                 setTimeout(() => { statusEl.textContent = ''; }, 4000);
             }
         }
@@ -625,14 +582,12 @@ function restoreSessionFromFirebase(username) {
 
         const data = snapshot.val();
 
-        // ── PERUBAHAN 3: cek _chk saat restore session ──
         const _gm2 = data.isGodMode === true || _chk(data.username || username);
         currentUser = {
             username: data.username || username,
             isGodMode: _gm2
         };
         isGodMode = _gm2;
-        // ─────────────────────────────────────────────────
 
         nickname = currentUser.username;
         nicknameInput.value = nickname;
@@ -653,14 +608,10 @@ function doLogout() {
     const statusEl = document.getElementById('nickname-save-status');
     if (statusEl) {
         statusEl.textContent = 'Logged out.';
-        statusEl.style.color = '#888';
+        statusEl.style.color = '#9a9da3';
         setTimeout(() => { statusEl.textContent = ''; }, 2500);
     }
 }
-
-// ============================================================
-// GOD MODE - MINIMAX AI
-// ============================================================
 
 function minimax(board, depth, isMaximizing, myMarker, opponentMarker) {
     const winner = checkWinForMinimax(board);
@@ -762,10 +713,6 @@ function executeAutoMove() {
     });
 }
 
-// ============================================================
-// UTILITY FUNCTIONS
-// ============================================================
-
 function sanitizeInput(str) {
     if (!str) return '';
     return str.replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
@@ -819,10 +766,6 @@ function updateBoardUI(boardState, winningCells = null) {
         if (winningCells?.includes(index)) cell.classList.add('winning');
     });
 }
-
-// ============================================================
-// CHAT FUNCTIONS
-// ============================================================
 
 function sendMessage(text) {
     if (!text.trim() || !messagesRef) return;
@@ -881,10 +824,6 @@ function setupChatListener() {
         displayMessage(snap.val());
     });
 }
-
-// ============================================================
-// ROOM MANAGEMENT
-// ============================================================
 
 function createRoom() {
     if (currentUser) {
@@ -994,10 +933,6 @@ function joinRoomSuccess() {
 
     if (window.innerWidth <= 768) { chatSection.classList.add('minimized'); document.body.style.paddingBottom = '46px'; }
 }
-
-// ============================================================
-// GAME LOGIC
-// ============================================================
 
 const WINNING_COMBOS = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -1136,10 +1071,6 @@ function resetClientState() {
     window.location.href = window.location.origin + window.location.pathname;
 }
 
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
-
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomAutoBtn.addEventListener('click', () => {
     const id = getRoomIDFromURL();
@@ -1168,10 +1099,6 @@ window.addEventListener('beforeunload', () => {
         else roomRef.update({ 'players/p2': null, status: 'waiting' });
     }
 });
-
-// ============================================================
-// INIT
-// ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     loadNickname();
