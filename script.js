@@ -96,8 +96,11 @@ function createAuthModal() {
                 from { opacity: 0; transform: translateY(16px); }
                 to   { opacity: 1; transform: translateY(0); }
             }
+            #auth-modal-topbar {
+                display: flex; justify-content: flex-end;
+                padding: 8px 8px 0;
+            }
             #auth-modal-close {
-                position: absolute; top: 10px; right: 10px; z-index: 2;
                 width: 28px; height: 28px; border-radius: 50%;
                 background: transparent; border: none;
                 color: #7a7e85; cursor: pointer;
@@ -149,7 +152,8 @@ function createAuthModal() {
             .auth-input:focus { border-color: #fabf00; }
             .auth-input.has-right-icon { padding-right: 40px; }
             .auth-eye-btn {
-                position: absolute; right: 6px;
+                position: absolute; right: 6px; top: 50%;
+                transform: translateY(-50%);
                 width: 30px; height: 30px;
                 background: none; border: none;
                 color: #6a6d73; cursor: pointer;
@@ -215,9 +219,11 @@ function createAuthModal() {
     modal.innerHTML = `
         <div id="auth-modal-overlay">
             <div id="auth-modal-card">
-                <button id="auth-modal-close" onclick="closeAuthModal()" type="button" aria-label="Tutup">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div id="auth-modal-topbar">
+                    <button id="auth-modal-close" onclick="closeAuthModal()" type="button" aria-label="Tutup">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
                 <div id="auth-tabs">
                     <button id="tab-login" class="auth-tab-btn active" onclick="switchAuthTab('login')">Login</button>
                     <button id="tab-register" class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
