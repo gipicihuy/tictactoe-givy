@@ -107,7 +107,7 @@ function createAuthModal() {
                 display: flex; align-items: center; justify-content: center;
                 font-size: 0.85rem; transition: color 0.2s, background 0.2s;
             }
-            #auth-modal-close:hover { color: #fabf00; background: rgba(255,255,255,0.06); }
+            #auth-modal-close:hover { color: #c9cbd1; background: rgba(255,255,255,0.06); }
             #auth-tabs { display: flex; border-bottom: 1.5px solid rgba(153,153,153,0.25); }
             .auth-tab-btn {
                 flex: 1; padding: 14px 0;
@@ -137,31 +137,33 @@ function createAuthModal() {
                 font-weight: 700; text-transform: uppercase;
                 letter-spacing: 0.06em; margin-bottom: 6px;
             }
-            .auth-field-wrap { position: relative; display: flex; align-items: center; }
-            .auth-field-icon {
-                position: absolute; left: 13px;
-                color: #6a6d73; font-size: 0.8rem; pointer-events: none;
-            }
-            .auth-input {
-                width: 100%; padding: 11px 12px 11px 36px;
+            .auth-field-wrap {
+                display: flex; align-items: center;
                 background: #1e2025; border: 1.5px solid rgba(153,153,153,0.25);
-                border-radius: 0.4rem; color: #f2f2f2;
-                font-size: 0.875rem; outline: none;
+                border-radius: 0.4rem; padding: 0 12px;
                 transition: border-color 0.2s;
             }
-            .auth-input:focus { border-color: #fabf00; }
-            .auth-input.has-right-icon { padding-right: 40px; }
+            .auth-field-wrap:focus-within { border-color: #fabf00; }
+            .auth-field-icon {
+                color: #6a6d73; font-size: 0.8rem; flex-shrink: 0; margin-right: 10px;
+                display: flex; align-items: center;
+            }
+            .auth-input {
+                flex: 1; min-width: 0;
+                background: transparent; border: none; outline: none;
+                color: #f2f2f2; font-size: 0.875rem;
+                padding: 11px 0;
+            }
             .auth-eye-btn {
-                position: absolute; right: 6px; top: 50%;
-                transform: translateY(-50%);
-                width: 30px; height: 30px;
+                flex-shrink: 0; margin-left: 8px;
+                width: 24px; height: 24px;
                 background: none; border: none;
                 color: #6a6d73; cursor: pointer;
                 font-size: 0.8rem;
                 display: flex; align-items: center; justify-content: center;
                 transition: color 0.2s;
             }
-            .auth-eye-btn:hover { color: #fabf00; }
+            .auth-eye-btn:hover { color: #c9cbd1; }
             #auth-message {
                 min-height: 16px; font-size: 0.73rem;
                 font-weight: 600; margin-bottom: 14px;
@@ -247,7 +249,7 @@ function createAuthModal() {
                         <label>Password</label>
                         <div class="auth-field-wrap">
                             <i class="fas fa-lock auth-field-icon"></i>
-                            <input id="auth-password" class="auth-input has-right-icon" type="password"
+                            <input id="auth-password" class="auth-input" type="password"
                                 placeholder="Kata sandi" maxlength="32"
                                 onkeydown="if(event.key==='Enter') submitAuth()">
                             <button class="auth-eye-btn" onclick="toggleAuthPassword()" type="button" tabindex="-1">
